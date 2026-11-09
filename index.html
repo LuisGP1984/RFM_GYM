@@ -79,14 +79,29 @@ button { cursor: pointer; }
 
 .weekbar { display: flex; align-items: center; gap: 8px; }
 .wk-mid { flex: 1; text-align: center; min-width: 0; }
-.wk-label { font-family: var(--display); font-size: 2.2rem; line-height: 1; text-transform: uppercase; font-weight: 600; }
-.wk-label b { font-weight: 900; color: var(--b1); font-variant-numeric: tabular-nums; }
-.wk-label span { color: var(--muted); font-size: 1.3rem; }
-.wk-dates { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
-.progress { display: grid; grid-template-columns: repeat(auto-fit, minmax(10px, 1fr)); gap: 4px; }
-.progress i { height: 6px; border-radius: 3px; background: var(--line); }
-.progress i.done { background: var(--b2); }
-.progress i.on { background: var(--b1); }
+.wk-rel { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--b1); }
+.wk-label { font-family: var(--display); font-size: 1.75rem; line-height: 1.05; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wk-label span { font-weight: 700; font-size: .7em; color: var(--muted); text-transform: lowercase; }
+.wk-label small { font-size: .62em; color: var(--muted); font-weight: 700; }
+
+.strip-wrap { display: grid; gap: 6px; }
+.strip-h { display: flex; align-items: baseline; gap: 8px; }
+.strip-h span { font-family: var(--display); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: .95rem; }
+.strip-h small { color: var(--muted); font-size: .8rem; }
+.strip { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
+.wkchip { flex: none; display: grid; justify-items: center; gap: 4px; min-width: 56px; padding: 8px 6px 4px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.wkchip .d { font-size: .75rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--muted); }
+.wkchip .dots { display: flex; gap: 3px; }
+.wkchip .dots i { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--b2); }
+.wkchip .dots i.f { background: var(--b1); border-color: var(--b1); }
+.wkchip .x { font-size: .68rem; font-weight: 700; color: var(--b1); line-height: 1; min-height: .7rem; }
+.wkchip.on { border-color: var(--b1); box-shadow: inset 0 0 0 1px var(--b1); background: var(--soft); }
+.wkchip.on .d { color: var(--ink); }
+
+.opts { display: grid; gap: 2px; }
+.opts label { display: flex; gap: 10px; align-items: center; padding: 8px 4px; }
+.opts input { accent-color: var(--b1); width: 18px; height: 18px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 .plate { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; font-family: var(--display); font-weight: 700; font-size: 1.3rem; color: var(--p-ink);
   box-shadow: inset 0 0 0 4px rgb(255 255 255 / .22), inset 0 0 0 11px rgb(0 0 0 / .08); }
@@ -288,26 +303,35 @@ function sheetXml(sh) {
   return x + '</worksheet>';
 }
 
-function buildTabla(data, fmtEntry, fullName) {
+function buildTabla(data, weeks, h) {
+  // weeks: lista de lunes 'YYYY-MM-DD'; h: { fmtEntry, fullName, mondayOf, weekLabel }
   const sh = newSheet();
-  const p = data.program, per = 4;
-  const groups = Math.ceil(p.weeks / per), gw = per + 3;
+  const per = 4, n = weeks.length;
+  const groups = Math.max(1, Math.ceil(n / per)), gw = per + 3;
   for (let g = 0; g < groups; g++) {
     const b = g * gw;
-    sh.widths.set(b, 30); for (let k = 1; k <= per; k++) sh.widths.set(b + k, 14);
+    sh.widths.set(b, 30); for (let k = 1; k <= per; k++) sh.widths.set(b + k, 16);
     sh.widths.set(b + per + 1, 24); sh.widths.set(b + per + 2, 3);
   }
-  setCell(sh, 0, 0, 'TABLA PARA APUNTAR LOS PESOS Y LLEVAR UNA SOBRECARGA PROGRESIVA', S.TITLE);
+  const title = n ? `RFM GYM · SOBRECARGA PROGRESIVA · semanas del ${h.weekLabel(weeks[0]).split(' – ')[0]} al ${h.weekLabel(weeks[n - 1]).split(' – ')[1]}` : 'RFM GYM · SOBRECARGA PROGRESIVA';
+  setCell(sh, 0, 0, title, S.TITLE);
+  const byKey = new Map(); // "dayId|lunes" -> sesiones ordenadas
+  for (const s of data.sessions) {
+    const k = s.dayId + '|' + h.mondayOf(s.date);
+    if (!byKey.has(k)) byKey.set(k, []);
+    byKey.get(k).push(s);
+  }
+  byKey.forEach(list => list.sort((x, y) => x.date.localeCompare(y.date)));
   let row = 2;
-  for (const day of p.days) {
+  for (const day of data.program.days) {
     const hr = row;
     for (let g = 0; g < groups; g++) {
       const b = g * gw, nc = b + per + 1;
       setCell(sh, hr, b, day.name, S.HEADER); setCell(sh, hr + 1, b, '', S.HEADER);
       sh.merges.push(`${cellRef(hr, b)}:${cellRef(hr + 1, b)}`);
       for (let k = 1; k <= per; k++) {
-        const w = g * per + k;
-        if (w <= p.weeks) { setCell(sh, hr, b + k, 'semana ' + w, S.HEADER); setCell(sh, hr + 1, b + k, 'KG × REPS', S.HEADER); }
+        const w = weeks[g * per + k - 1];
+        if (w) { setCell(sh, hr, b + k, h.weekLabel(w), S.HEADER); setCell(sh, hr + 1, b + k, 'KG × REPS', S.HEADER); }
       }
       setCell(sh, hr, nc, 'notas', S.HEADER); setCell(sh, hr + 1, nc, '', S.HEADER);
       sh.merges.push(`${cellRef(hr, nc)}:${cellRef(hr + 1, nc)}`);
@@ -319,15 +343,14 @@ function buildTabla(data, fmtEntry, fullName) {
       const cs = ei % 2 === 0 ? S.CELL_B : S.CELL, ns = ei % 2 === 0 ? S.NOTE_B : S.NOTE;
       for (let g = 0; g < groups; g++) {
         const b = g * gw, notes = [];
-        setCell(sh, r, b, fullName(ex), S.EXERCISE);
+        setCell(sh, r, b, h.fullName(ex), S.EXERCISE);
         for (let k = 1; k <= per; k++) {
-          const w = g * per + k;
-          if (w > p.weeks) continue;
-          const entries = data.sessions.filter(s => s.dayId === day.id && s.week === w)
-            .sort((a, c) => a.date.localeCompare(c.date))
-            .map(s => s.entries[ex.id]).filter(Boolean);
-          setCell(sh, r, b + k, entries.map(fmtEntry).filter(Boolean).join(' / '), cs);
-          entries.forEach(e => { if (e.note && e.note.trim()) notes.push(`S${w}: ${e.note.trim()}`); });
+          const w = weeks[g * per + k - 1];
+          if (!w) { setCell(sh, r, b + k, '', cs); continue; }
+          const sess = byKey.get(day.id + '|' + w) || [];
+          const entries = sess.map(s => ({ s, e: s.entries[ex.id] })).filter(x => x.e);
+          setCell(sh, r, b + k, entries.map(x => h.fmtEntry(x.e)).filter(Boolean).join(' / '), cs);
+          entries.forEach(x => { if (x.e.note && x.e.note.trim()) notes.push(`${x.s.date.slice(8, 10)}/${x.s.date.slice(5, 7)}: ${x.e.note.trim()}`); });
         }
         setCell(sh, r, b + per + 1, notes.join('; '), ns);
       }
@@ -338,13 +361,14 @@ function buildTabla(data, fmtEntry, fullName) {
   return sh;
 }
 
-function buildDatos(data, fullName) {
+function buildDatos(data, weeks, h) {
   const sh = newSheet();
-  ['Fecha', 'Semana', 'Día', 'Ejercicio', 'Kg', 'Reps', 'Nota'].forEach((h, i) => setCell(sh, 0, i, h, S.HEADER));
-  [12, 9, 12, 34, 8, 8, 40].forEach((w, i) => sh.widths.set(i, w));
+  ['Fecha', 'Semana', 'Día', 'Ejercicio', 'Kg', 'Reps', 'Nota'].forEach((t, i) => setCell(sh, 0, i, t, S.HEADER));
+  [12, 20, 12, 34, 8, 8, 40].forEach((w, i) => sh.widths.set(i, w));
+  const inRange = new Set(weeks);
   const days = new Map(data.program.days.map(d => [d.id, d]));
   let r = 1;
-  const sessions = [...data.sessions].sort((a, b) => a.date.localeCompare(b.date) || a.week - b.week);
+  const sessions = data.sessions.filter(s => inRange.has(h.mondayOf(s.date))).sort((a, b) => a.date.localeCompare(b.date));
   for (const s of sessions) {
     const day = days.get(s.dayId);
     const order = day ? day.exercises.map(e => e.id) : [];
@@ -357,11 +381,10 @@ function buildDatos(data, fullName) {
       if (!e || (e.kg == null && e.reps == null && !(e.note || '').trim())) continue;
       const ex = day && day.exercises.find(x => x.id === id);
       const [y, m, d] = s.date.split('-').map(Number);
-      const serial = Date.UTC(y, m - 1, d) / 864e5 + 25569;
-      setCell(sh, r, 0, serial, S.DATE, true);
-      setCell(sh, r, 1, s.week, S.NUM, true);
+      setCell(sh, r, 0, Date.UTC(y, m - 1, d) / 864e5 + 25569, S.DATE, true);
+      setCell(sh, r, 1, h.weekLabel(h.mondayOf(s.date)), S.TEXT);
       setCell(sh, r, 2, day ? day.name : s.dayName, S.TEXT);
-      setCell(sh, r, 3, ex ? fullName(ex) : (e.exerciseName || ''), S.TEXT);
+      setCell(sh, r, 3, ex ? h.fullName(ex) : (e.exerciseName || ''), S.TEXT);
       if (e.kg != null) setCell(sh, r, 4, e.kg, S.NUM, true); else setCell(sh, r, 4, '', S.TEXT);
       if (e.reps != null) setCell(sh, r, 5, e.reps, S.NUM, true); else setCell(sh, r, 5, '', S.TEXT);
       setCell(sh, r, 6, e.note || '', S.TEXT);
@@ -379,18 +402,19 @@ const XLSX_STATIC = {
   'xl/styles.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFED7D31"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF7CAAC"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFBE4D5"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBFBFBF"/></left><right style="thin"><color rgb="FFBFBFBF"/></right><top style="thin"><color rgb="FFBFBFBF"/></top><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="11"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyBorder="1" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyBorder="1" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="14" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'
 };
 
-function buildXlsx(data, fmtEntry, fullName) {
+function buildXlsx(data, weeks, h) {
   const enc = new TextEncoder();
   const files = Object.entries(XLSX_STATIC).map(([name, xml]) => ({ name, data: enc.encode(xml) }));
-  files.push({ name: 'xl/worksheets/sheet1.xml', data: enc.encode(sheetXml(buildTabla(data, fmtEntry, fullName))) });
-  files.push({ name: 'xl/worksheets/sheet2.xml', data: enc.encode(sheetXml(buildDatos(data, fullName))) });
+  files.push({ name: 'xl/worksheets/sheet1.xml', data: enc.encode(sheetXml(buildTabla(data, weeks, h))) });
+  files.push({ name: 'xl/worksheets/sheet2.xml', data: enc.encode(sheetXml(buildDatos(data, weeks, h))) });
   return zipStore(files);
 }
 
 </script>
 <script>
-// ================== Datos ==================
-const KEY = 'sobrecarga.v1';
+// ================== Fechas ==================
+const KEY = 'rfmgym.v2';
+const FIRST_WEEK = '2026-11-02'; // primera semana de la app (lunes)
 const WD = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
@@ -400,12 +424,22 @@ function todayStr() { const t = new Date(); return dstr(Math.round(Date.UTC(t.ge
 function dow(s) { return (new Date(dnum(s) * 864e5).getUTCDay() + 6) % 7; }
 function mondayOf(s) { return dstr(dnum(s) - dow(s)); }
 function addDays(s, n) { return dstr(dnum(s) + n); }
-function weekFor(start, date) { const d = dnum(date) - dnum(start); return d < 0 ? 1 : Math.floor(d / 7) + 1; }
-function weekStart(start, w) { return addDays(start, (w - 1) * 7); }
 function fmtShort(s) { const [, m, d] = s.split('-'); return `${d}/${m}`; }
+function fmtDate(s) { const [y, m, d] = s.split('-'); return `${d}/${m}/${y.slice(2)}`; }
 function fmtDay(s) { return `${WD[dow(s)]} ${fmtShort(s)}`; }
-function fmtLong(s) { const [y] = s.split('-'); return `${fmtDay(s)}/${y}`; }
+function fmtLong(s) { return `${WD[dow(s)]} ${fmtDate(s)}`; }
+/** "10/11 – 16/11/26" */
+function weekLabel(mon) { return `${fmtShort(mon)} – ${fmtDate(addDays(mon, 6))}`; }
+function weekRel(mon) {
+  const diff = Math.round((dnum(mondayOf(todayStr())) - dnum(mon)) / 7);
+  if (diff === 0) return 'Esta semana';
+  if (diff === 1) return 'Semana pasada';
+  if (diff > 1) return `Hace ${diff} semanas`;
+  return diff === -1 ? 'Próxima semana' : `Dentro de ${-diff} semanas`;
+}
+function weeksBetween(fromMon, toMon) { const out = []; for (let m = fromMon; m <= toMon; m = addDays(m, 7)) out.push(m); return out; }
 
+// ================== Formato ==================
 function fmtKg(n) { const r = Math.round(n * 100) / 100; return String(r).replace('.', ','); }
 function parseKg(t) { t = String(t).trim().replace(',', '.'); if (!t) return null; const n = Number(t); return isFinite(n) && n >= 0 ? n : null; }
 function parseReps(t) { t = String(t).trim(); if (!/^\d+$/.test(t)) return null; return parseInt(t, 10); }
@@ -421,6 +455,7 @@ function fullName(ex) { return ex.target ? `${ex.name} ${ex.target}` : ex.name; 
 function hasValues(e) { return !!e && (e.kg != null || e.reps != null); }
 function hasData(e) { return hasValues(e) || !!(e && e.note && e.note.trim()); }
 
+// ================== Rutina por defecto (la del Excel) ==================
 function parseEx(id, full) {
   const m = full.trim().match(/^(.*?)\s+(\d+(?:x\d+)*)$/);
   return m ? { id, name: m[1], target: m[2], stepKg: 2.5 } : { id, name: full.trim(), target: '', stepKg: 2.5 };
@@ -434,31 +469,24 @@ function defaultDays() {
   ];
   return src.map(([name, list], i) => ({ id: `d${i + 1}`, name, exercises: list.map((f, j) => parseEx(`d${i + 1}e${j + 1}`, f)) }));
 }
+function emptyData() { return { version: 2, program: { days: defaultDays() }, sessions: [] }; }
 
-/** Primera vez: rutina del Excel + lo apuntado en la semana 1 del Excel (fechas aproximadas). */
-function seedData() {
-  const start = addDays(mondayOf(todayStr()), -7);
-  const days = defaultDays();
-  const nm = (id) => fullName(days.flatMap(d => d.exercises).find(e => e.id === id));
-  const en = (id, kg, reps, note = '') => [id, { kg, reps, note, exerciseName: nm(id) }];
+/** Acepta copias antiguas (con nº de semana): la semana sale siempre de la fecha. */
+function normalize(d) {
+  if (!d || !d.program || !Array.isArray(d.program.days) || !Array.isArray(d.sessions)) throw new Error('formato');
   return {
-    program: { startDate: start, weeks: 12, days },
-    sessions: [
-      { id: uid(), date: addDays(start, 1), week: 1, dayId: 'd2', dayName: 'Día 2', entries: Object.fromEntries([
-        en('d2e1', 8, 10), en('d2e2', 4, null), en('d2e3', 35, null), en('d2e4', 25, 8), en('d2e5', 7.5, 12)]) },
-      { id: uid(), date: addDays(start, 3), week: 1, dayId: 'd4', dayName: 'Día 4', entries: Object.fromEntries([
-        en('d4e1', 20, 15), en('d4e2', 8, 12), en('d4e3', 25, 10), en('d4e4', 20, 15, 'uni'), en('d4e5', 10, 12), en('d4e6', 10, 12)]) },
-    ],
-    seeded: true,
+    version: 2,
+    program: { days: d.program.days },
+    sessions: d.sessions.filter(s => s && /^\d{4}-\d{2}-\d{2}$/.test(s.date)).map(s => ({
+      id: s.id || uid(), date: s.date, dayId: s.dayId, dayName: s.dayName || '', entries: s.entries || {},
+    })),
   };
 }
 
 let storageOk = true;
 function load() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (raw) { const d = JSON.parse(raw); if (d && d.program && Array.isArray(d.sessions)) return d; }
-  } catch (e) { storageOk = false; }
+  try { const raw = localStorage.getItem(KEY); if (raw) return normalize(JSON.parse(raw)); }
+  catch (e) { storageOk = false; }
   return null;
 }
 function save() {
@@ -466,22 +494,31 @@ function save() {
   catch (e) { storageOk = false; }
 }
 
+try { localStorage.removeItem('sobrecarga.v1'); } catch (e) { /* sin almacenamiento */ }
 let data = load();
-if (!data) { data = seedData(); save(); }
+if (!data) { data = emptyData(); save(); }
 
-// ================== Estado de vista ==================
+// ================== Estado ==================
 const nav = [{ v: 'home' }];
-let selWeek = currentWeek();
-let noteOpen = new Set();
+let selMon = mondayOf(todayStr());
+const noteOpen = new Set();
 
-function currentWeek() { return weekFor(data.program.startDate, todayStr()); }
-function maxWeek() { return Math.max(data.program.weeks, currentWeek(), ...data.sessions.map(s => s.week), 1); }
+function currentMon() { return mondayOf(todayStr()); }
+function firstMon() {
+  const earliest = data.sessions.reduce((m, s) => (s.date < m ? s.date : m), FIRST_WEEK);
+  return mondayOf(earliest);
+}
+function lastMon() {
+  const latest = data.sessions.reduce((m, s) => (s.date > m ? s.date : m), todayStr());
+  return mondayOf(latest);
+}
 function curView() { return nav[nav.length - 1]; }
 function go(v) { nav.push(v); render(true); }
 function back() { if (nav.length > 1) nav.pop(); render(true); }
 function dayById(id) { return data.program.days.find(d => d.id === id); }
 function sessionById(id) { return data.sessions.find(s => s.id === id); }
 function allExercises() { return data.program.days.flatMap(d => d.exercises); }
+function sessionsOfWeek(mon) { return data.sessions.filter(s => mondayOf(s.date) === mon); }
 
 function lastBefore(exId, s) {
   let best = null;
@@ -489,13 +526,13 @@ function lastBefore(exId, s) {
     if (o.id === s.id || o.date > s.date) continue;
     const e = o.entries[exId];
     if (!hasValues(e)) continue;
-    if (!best || o.date > best.s.date || (o.date === best.s.date && o.week > best.s.week)) best = { s: o, e };
+    if (!best || o.date > best.s.date) best = { s: o, e };
   }
   return best;
 }
 function history(exId) {
   return data.sessions.filter(s => hasData(s.entries[exId])).map(s => ({ s, e: s.entries[exId] }))
-    .sort((a, b) => b.s.date.localeCompare(a.s.date) || b.s.week - a.s.week);
+    .sort((a, b) => b.s.date.localeCompare(a.s.date));
 }
 
 // ================== Utilidades UI ==================
@@ -517,7 +554,7 @@ function modal({ title, body = '', confirm = 'Aceptar', danger = false, onConfir
     <div class="sheet-actions"><button type="button" class="btn ghost" data-m="cancel">Cancelar</button>
     <button type="button" class="btn ${danger ? 'danger' : 'solid'}" data-m="ok">${esc(confirm)}</button></div></div>`;
   m.hidden = false;
-  const first = m.querySelector('input, textarea'); (first || m.querySelector('[data-m="ok"]')).focus();
+  const first = m.querySelector('input[type="text"], input:not([type]), textarea'); (first || m.querySelector('[data-m="ok"]')).focus();
   m.onclick = (ev) => {
     const b = ev.target.closest('[data-m]');
     if (ev.target === m || (b && b.dataset.m === 'cancel')) { m.hidden = true; return; }
@@ -547,6 +584,7 @@ function render(scrollTop) {
   else if (v.v === 'editor') html = renderEditor();
   $('#view').innerHTML = html;
   $('#storageWarn').hidden = storageOk;
+  const strip = $('#strip'); if (strip) { const on = strip.querySelector('.on'); if (on) on.scrollIntoView({ block: 'nearest', inline: 'center' }); }
   if (scrollTop) window.scrollTo(0, 0);
 }
 
@@ -556,29 +594,35 @@ function setHeader(title, sub, brand) {
   $('#hSub').textContent = sub || '';
 }
 
+function renderStrip() {
+  const days = data.program.days.length || 4;
+  const weeks = weeksBetween(firstMon(), lastMon());
+  return `<section class="strip-wrap" aria-label="Constancia por semana"><div class="strip-h"><span>Constancia</span><small>días hechos por semana</small></div>
+    <div class="strip" id="strip">${weeks.map(mon => {
+      const ss = sessionsOfWeek(mon);
+      const done = new Set(ss.map(s => s.dayId)).size;
+      const extra = Math.max(0, ss.length - done);
+      const dots = Array.from({ length: days }, (_, i) => `<i class="${i < done ? 'f' : ''}"></i>`).join('');
+      return `<button class="wkchip ${mon === selMon ? 'on' : ''}" data-act="pickWeek" data-mon="${mon}" aria-label="Semana del ${weekLabel(mon)}: ${done} de ${days} días">
+        <span class="d">${fmtShort(mon)}</span><span class="dots">${dots}</span><span class="x">${extra ? '+' + extra : '&nbsp;'}</span></button>`;
+    }).join('')}</div></section>`;
+}
+
 function renderHome() {
-  const p = data.program, w = selWeek, cur = currentWeek();
-  const ws = weekStart(p.startDate, w);
-  setHeader('RFM GYM', `Sobrecarga progresiva · ${p.weeks} semanas`, true);
-  let h = '';
-  if (data.seeded) {
-    h += `<div class="notice"><p>He copiado lo que tenías apuntado en la semana 1 de tu Excel (Día 2 y Día 4), con fechas aproximadas.</p>
-      <div class="row-btns"><button class="btn ghost sm" data-act="keepSeed">Mantener</button><button class="btn ghost sm" data-act="clearSeed">Empezar de cero</button></div></div>`;
-  }
-  h += `<section class="weekbar" aria-label="Semana">
-    <button class="icon-btn" data-act="wk" data-d="-1" ${w <= 1 ? 'disabled' : ''} aria-label="Semana anterior">‹</button>
-    <div class="wk-mid"><div class="wk-label">Semana <b>${w}</b><span>/${p.weeks}</span></div>
-      <div class="wk-dates">${fmtShort(ws)} – ${fmtShort(addDays(ws, 6))}${w === cur ? ' · esta semana' : ''}${w > p.weeks ? ' · fuera del programa' : ''}</div>
-      ${w !== cur ? `<button class="link" data-act="wkNow">Ir a la semana actual</button>` : ''}</div>
-    <button class="icon-btn" data-act="wk" data-d="1" ${w >= maxWeek() + 1 ? 'disabled' : ''} aria-label="Semana siguiente">›</button>
-  </section>
-  <div class="progress" aria-hidden="true">${Array.from({ length: p.weeks }, (_, i) => {
-    const n = i + 1, done = data.sessions.some(s => s.week === n);
-    return `<i class="${n === w ? 'on' : ''} ${done ? 'done' : ''}"></i>`;
-  }).join('')}</div>`;
-  if (!p.days.length) h += `<p class="empty">No hay días en la rutina. Añádelos en Menú › Editar rutina.</p>`;
-  for (const day of p.days) {
-    const ss = data.sessions.filter(s => s.dayId === day.id && s.week === w).sort((a, b) => a.date.localeCompare(b.date));
+  const cur = currentMon();
+  setHeader('RFM GYM', 'Sobrecarga progresiva', true);
+  const sun = addDays(selMon, 6);
+  let h = `<section class="weekbar" aria-label="Semana">
+    <button class="icon-btn" data-act="wk" data-d="-7" ${selMon <= firstMon() ? 'disabled' : ''} aria-label="Semana anterior">‹</button>
+    <div class="wk-mid"><div class="wk-rel">${weekRel(selMon)}</div>
+      <div class="wk-label">${fmtShort(selMon)} <span>al</span> ${fmtShort(sun)}<small>/${sun.slice(2, 4)}</small></div>
+      ${selMon !== cur ? `<button class="link" data-act="wkNow">Ir a esta semana</button>` : ''}</div>
+    <button class="icon-btn" data-act="wk" data-d="7" ${selMon >= lastMon() ? 'disabled' : ''} aria-label="Semana siguiente">›</button>
+  </section>`;
+  h += renderStrip();
+  if (!data.program.days.length) h += `<p class="empty">No hay días en la rutina. Añádelos en Menú › Editar rutina.</p>`;
+  for (const day of data.program.days) {
+    const ss = sessionsOfWeek(selMon).filter(s => s.dayId === day.id).sort((a, b) => a.date.localeCompare(b.date));
     h += `<article class="day">
       <header><span class="${plateClass(day)}">${esc(plateNum(day))}</span>
         <div class="day-t"><h2>${esc(day.name)}</h2><p>${esc(day.exercises.map(e => e.name).join(' · '))}</p></div>
@@ -599,14 +643,12 @@ function renderSession(id) {
   const s = sessionById(id);
   if (!s) { nav.pop(); return renderHome(); }
   const day = dayById(s.dayId);
-  setHeader(day ? day.name : s.dayName, `Semana ${s.week} · ${fmtLong(s.date)}`);
+  const mon = mondayOf(s.date);
+  setHeader(day ? day.name : s.dayName, `${fmtLong(s.date)} · semana del ${weekLabel(mon)}`);
   const exs = day ? day.exercises : [];
   let h = `<section class="sess-meta">
-    <label class="field"><span>Fecha</span><input type="date" id="sDate" value="${s.date}" data-act-change="sDate"></label>
-    <div class="field"><span>Semana</span><div class="mini-step">
-      <button class="icon-btn sm" data-act="sWeek" data-d="-1" ${s.week <= 1 ? 'disabled' : ''} aria-label="Semana menos">−</button>
-      <b>${s.week}</b>
-      <button class="icon-btn sm" data-act="sWeek" data-d="1" aria-label="Semana más">+</button></div></div>
+    <label class="field"><span>Fecha del entrenamiento</span><input type="date" id="sDate" value="${s.date}"></label>
+    <p class="hint">Si cambias la fecha, la sesión pasa a su semana.</p>
   </section>`;
   if (!exs.length) h += `<p class="empty">Este día no tiene ejercicios. Añádelos en Editar rutina.</p>`;
   for (const ex of exs) {
@@ -616,7 +658,7 @@ function renderSession(id) {
     h += `<article class="ex" data-ex="${ex.id}">
       <header><div><h3>${esc(ex.name)}</h3>${ex.target ? `<p class="target">Objetivo <b>${esc(ex.target)}</b></p>` : ''}</div>
         <button class="link" data-act="hist" data-id="${ex.id}">Histórico</button></header>
-      <p class="last">${last ? `Última vez <span>sem ${last.s.week} · ${fmtShort(last.s.date)}</span> <b>${esc(fmtEntry(last.e))}</b>` : 'Sin registros anteriores'}</p>
+      <p class="last">${last ? `Última vez <span>${fmtDay(last.s.date)}</span> <b>${esc(fmtEntry(last.e))}</b>` : 'Sin registros anteriores'}</p>
       <div class="steps">
         <div class="step"><button class="icon-btn" data-act="dec" data-f="kg" aria-label="Menos kg">−</button>
           <label><input id="kg-${ex.id}" data-f="kg" inputmode="decimal" autocomplete="off" value="${e.kg != null ? fmtKg(e.kg) : ''}" placeholder="${last && last.e.kg != null ? fmtKg(last.e.kg) : '—'}"><span>kg</span></label>
@@ -643,11 +685,11 @@ function renderHistory(exId) {
   let h = '';
   if (kgs.length >= 2) h += `<section class="chart"><h2>Evolución de kg</h2>${chartSvg(kgs)}</section>`;
   const best = items.filter(i => i.e.kg != null).sort((a, b) => b.e.kg - a.e.kg || (b.e.reps || 0) - (a.e.reps || 0))[0];
-  if (best) h += `<p class="best">Mejor marca <b>${esc(fmtEntry(best.e))}</b> · semana ${best.s.week}</p>`;
+  if (best) h += `<p class="best">Mejor marca <b>${esc(fmtEntry(best.e))}</b> · ${fmtDate(best.s.date)}</p>`;
   h += `<ol class="hist">` + items.map(i => {
     const day = dayById(i.s.dayId);
-    return `<li><button data-act="open" data-id="${i.s.id}"><span class="h-w">S${i.s.week}</span>
-      <span class="h-d">${fmtDay(i.s.date)}${day ? ' · ' + esc(day.name) : ''}${i.e.note ? `<em>${esc(i.e.note)}</em>` : ''}</span>
+    return `<li><button data-act="open" data-id="${i.s.id}"><span class="h-w">${fmtShort(i.s.date)}</span>
+      <span class="h-d">${WD[dow(i.s.date)]} · semana del ${weekLabel(mondayOf(i.s.date))}${day ? ' · ' + esc(day.name) : ''}${i.e.note ? `<em>${esc(i.e.note)}</em>` : ''}</span>
       <span class="h-v">${esc(fmtEntry(i.e) || '—')}</span></button></li>`;
   }).join('') + `</ol>`;
   return h;
@@ -671,22 +713,15 @@ function chartSvg(points) {
     <polygon points="${area}" class="area"/>
     <polyline points="${pts}" class="line"/>
     ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.e.kg).toFixed(1)}" r="${i === lastI ? 5 : 3}" class="${i === lastI ? 'dot end' : 'dot'}"/>`).join('')}
-    <text x="${x(0)}" y="${H - 6}" class="ax">S${points[0].s.week}</text>
-    <text x="${x(lastI)}" y="${H - 6}" text-anchor="end" class="ax">S${points[lastI].s.week}</text>
+    <text x="${x(0)}" y="${H - 6}" class="ax">${fmtShort(points[0].s.date)}</text>
+    <text x="${x(lastI)}" y="${H - 6}" text-anchor="end" class="ax">${fmtShort(points[lastI].s.date)}</text>
   </svg>`;
 }
 
 function renderEditor() {
-  const p = data.program;
-  setHeader('Editar rutina', 'Días, ejercicios y semanas');
-  let h = `<section class="card prog">
-    <label class="field"><span>Inicio de la semana 1</span><input type="date" id="pStart" value="${p.startDate}"></label>
-    <div class="field"><span>Nº de semanas</span><div class="mini-step">
-      <button class="icon-btn sm" data-act="pWeeks" data-d="-1" ${p.weeks <= 1 ? 'disabled' : ''} aria-label="Menos semanas">−</button><b>${p.weeks}</b>
-      <button class="icon-btn sm" data-act="pWeeks" data-d="1" ${p.weeks >= 52 ? 'disabled' : ''} aria-label="Más semanas">+</button></div></div>
-    <p class="hint">La semana de cada sesión sale de su fecha. Si cambias el inicio, se recalculan todas.</p>
-  </section>`;
-  for (const day of p.days) {
+  setHeader('Editar rutina', 'Días y ejercicios');
+  let h = '';
+  for (const day of data.program.days) {
     h += `<article class="card ed-day"><header><span class="${plateClass(day)}">${esc(plateNum(day))}</span><h2>${esc(day.name)}</h2>
       <button class="link" data-act="renDay" data-id="${day.id}">Renombrar</button><button class="link danger-t" data-act="delDay" data-id="${day.id}">Borrar</button></header><ul>`;
     day.exercises.forEach((ex, i) => {
@@ -703,6 +738,37 @@ function renderEditor() {
   return h;
 }
 
+// ================== Exportar ==================
+function exportDialog() {
+  const cur = currentMon();
+  const body = `<div class="opts" role="radiogroup">
+      <label><input type="radio" name="rng" value="12" checked> Últimas 12 semanas</label>
+      <label><input type="radio" name="rng" value="4"> Últimas 4 semanas</label>
+      <label><input type="radio" name="rng" value="all"> Todas</label>
+      <label><input type="radio" name="rng" value="custom"> Entre dos fechas</label>
+    </div>
+    <div class="two" id="custom">
+      <label class="field"><span>Desde</span><input type="date" id="xFrom" value="${addDays(cur, -77)}"></label>
+      <label class="field"><span>Hasta</span><input type="date" id="xTo" value="${addDays(cur, 6)}"></label>
+    </div>
+    <p class="hint">La hoja «Tabla» tiene el formato de tu Excel, en bloques de 4 semanas. La hoja «Datos» tiene una fila por ejercicio apuntado.</p>`;
+  modal({ title: 'Exportar a Excel', body, confirm: 'Descargar Excel', onConfirm: (m) => {
+    const v = m.querySelector('input[name="rng"]:checked').value;
+    const end = lastMon();
+    let from, to = end;
+    if (v === 'all') from = firstMon();
+    else if (v === 'custom') {
+      const a = m.querySelector('#xFrom').value, b = m.querySelector('#xTo').value;
+      if (!a || !b || a > b) { toast('Revisa las fechas: «Desde» tiene que ser anterior a «Hasta»'); return false; }
+      from = mondayOf(a); to = mondayOf(b);
+    } else { from = addDays(end, -7 * (Number(v) - 1)); if (from < firstMon()) from = firstMon(); }
+    const weeks = weeksBetween(from, to);
+    download(`RFM_GYM_${fmtShort(from).replace('/', '-')}_a_${fmtDate(addDays(to, 6)).replace(/\//g, '-')}.xlsx`,
+      buildXlsx(data, weeks, { fmtEntry, fullName, mondayOf, weekLabel }), XLSX_MIME);
+    toast('Excel generado');
+  } });
+}
+
 // ================== Acciones ==================
 function updEntry(sid, ex, patch) {
   const s = sessionById(sid); if (!s) return;
@@ -713,10 +779,11 @@ function updEntry(sid, ex, patch) {
 
 function startSession(dayId) {
   const day = dayById(dayId); if (!day) return;
-  const date = selWeek === currentWeek() ? todayStr() : weekStart(data.program.startDate, selWeek);
-  const s = { id: uid(), date, week: selWeek, dayId, dayName: day.name, entries: {} };
+  const date = selMon === currentMon() ? todayStr() : selMon;
+  const s = { id: uid(), date, dayId, dayName: day.name, entries: {} };
   data.sessions.push(s); save();
   go({ v: 'session', id: s.id });
+  if (selMon !== currentMon()) toast('Revisa la fecha del entrenamiento');
 }
 
 function exerciseForm(ex) {
@@ -735,17 +802,12 @@ document.addEventListener('click', (ev) => {
   const exObj = exId && sess ? (dayById(sess.dayId) || { exercises: [] }).exercises.find(e => e.id === exId) : null;
 
   switch (a) {
-    case 'wk': selWeek = Math.max(1, selWeek + Number(b.dataset.d)); render(); break;
-    case 'wkNow': selWeek = currentWeek(); render(); break;
+    case 'wk': selMon = addDays(selMon, Number(b.dataset.d)); render(); break;
+    case 'wkNow': selMon = currentMon(); render(); break;
+    case 'pickWeek': selMon = b.dataset.mon; render(); break;
     case 'start': startSession(b.dataset.id); break;
     case 'open': go({ v: 'session', id: b.dataset.id }); break;
     case 'hist': go({ v: 'history', id: b.dataset.id }); break;
-    case 'keepSeed': delete data.seeded; save(); render(); break;
-    case 'clearSeed':
-      modal({ title: 'Empezar de cero', body: '<p>Se borrarán los registros copiados del Excel y la semana 1 empezará esta semana.</p>', confirm: 'Empezar de cero', danger: true,
-        onConfirm: () => { data.sessions = []; data.program.startDate = mondayOf(todayStr()); delete data.seeded; save(); selWeek = currentWeek(); render(); } });
-      break;
-    case 'sWeek': sess.week = Math.max(1, sess.week + Number(b.dataset.d)); save(); render(); break;
     case 'inc': case 'dec': {
       const f = b.dataset.f, sign = a === 'inc' ? 1 : -1;
       const input = document.getElementById(`${f}-${exId}`);
@@ -775,7 +837,6 @@ document.addEventListener('click', (ev) => {
       if (ta.hidden) noteOpen.delete(sess.id + exId); else { noteOpen.add(sess.id + exId); ta.focus(); }
       break;
     }
-    case 'pWeeks': data.program.weeks = Math.min(52, Math.max(1, data.program.weeks + Number(b.dataset.d))); save(); render(); break;
     case 'mv': {
       const d = dayById(b.dataset.day), i = Number(b.dataset.i), j = i + Number(b.dataset.d);
       if (d && j >= 0 && j < d.exercises.length) { const [x] = d.exercises.splice(i, 1); d.exercises.splice(j, 0, x); save(); render(); }
@@ -835,19 +896,14 @@ document.addEventListener('change', (ev) => {
   const el = ev.target;
   if (el.id === 'sDate' && el.value) {
     const s = sessionById(curView().id);
-    s.date = el.value; s.week = weekFor(data.program.startDate, el.value); save(); render();
-  } else if (el.id === 'pStart' && el.value) {
-    data.program.startDate = el.value;
-    data.sessions.forEach(s => { s.week = weekFor(el.value, s.date); });
-    save(); selWeek = currentWeek(); render();
+    s.date = el.value; save(); selMon = mondayOf(el.value); render();
   } else if (el.id === 'importFile' && el.files[0]) {
     const r = new FileReader();
     r.onload = () => {
       try {
-        const d = JSON.parse(r.result);
-        if (!d.program || !Array.isArray(d.program.days) || !Array.isArray(d.sessions)) throw new Error();
-        modal({ title: 'Restaurar copia', body: `<p>Se sustituirán los datos actuales por los de la copia (${d.sessions.length} sesiones).</p>`, confirm: 'Restaurar', danger: true,
-          onConfirm: () => { data = d; save(); nav.length = 1; selWeek = currentWeek(); render(true); toast('Copia restaurada'); } });
+        const d = normalize(JSON.parse(r.result));
+        modal({ title: 'Restaurar copia', body: `<p>Se sustituirán los datos actuales por los de la copia (${d.sessions.length} entrenamientos).</p>`, confirm: 'Restaurar', danger: true,
+          onConfirm: () => { data = d; save(); nav.length = 1; selMon = currentMon(); render(true); toast('Copia restaurada'); } });
       } catch (e) { toast('Ese archivo no es una copia de RFM GYM'); }
       el.value = '';
     };
@@ -859,7 +915,7 @@ $('#back').addEventListener('click', back);
 $('#menuBtn').addEventListener('click', () => { const m = $('#menu'); m.hidden = !m.hidden; });
 $('#delSession').addEventListener('click', () => {
   const s = sessionById(curView().id);
-  modal({ title: 'Borrar sesión', body: `<p>Se borrará lo apuntado el ${fmtDay(s.date)}.</p>`, confirm: 'Borrar', danger: true,
+  modal({ title: 'Borrar entrenamiento', body: `<p>Se borrará lo apuntado el ${fmtLong(s.date)}.</p>`, confirm: 'Borrar', danger: true,
     onConfirm: () => { data.sessions = data.sessions.filter(x => x.id !== s.id); save(); back(); } });
 });
 $('#menu').addEventListener('click', (ev) => {
@@ -867,7 +923,7 @@ $('#menu').addEventListener('click', (ev) => {
   $('#menu').hidden = true;
   const today = todayStr();
   if (b.dataset.menu === 'editor') go({ v: 'editor' });
-  else if (b.dataset.menu === 'xlsx') { download(`RFM_GYM_${today}.xlsx`, buildXlsx(data, fmtEntry, fullName), XLSX_MIME); toast('Excel generado'); }
+  else if (b.dataset.menu === 'xlsx') exportDialog();
   else if (b.dataset.menu === 'backup') { download(`RFM_GYM_copia_${today}.json`, JSON.stringify(data, null, 1), 'application/json'); toast('Copia generada'); }
   else if (b.dataset.menu === 'import') $('#importFile').click();
 });
