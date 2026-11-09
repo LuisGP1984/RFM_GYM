@@ -1,6 +1,6 @@
-# RFM GYM · Sobrecarga progresiva
+# RFM GYM
 
-App web para apuntar kg y repeticiones de una rutina de 4 días durante 12 semanas, con histórico por ejercicio y exportación a Excel.
+App web para apuntar kg y repeticiones de una rutina de 4 días con histórico por ejercicio y exportación a Excel.
 
 **Abrir la app:** https://TU-USUARIO.github.io/sobrecarga/
 

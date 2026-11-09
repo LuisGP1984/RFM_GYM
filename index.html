@@ -9,26 +9,19 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>RFM GYM</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta name="color-scheme" content="light">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@1,700;1,800;1,900&family=Barlow:wght@400;500;600&display=swap">
 <style>
 /* Layout: una columna de app móvil (máx. 560px), cabecera fija. Colores cálidos del Excel (naranja ED7D31, melocotón F7CAAC/FBE4D5) y degradado amarillo-naranja-rojo del logo */
 :root {
-  --bg: #fdf3ec; --surface: #ffffff; --ink: #2a1611; --muted: #7d5c50; --line: #f1d6c5; --soft: #fbe4d5;
+  --bg: #ffffff; --surface: #ffffff; --ink: #2a1611; --muted: #7d5c50; --line: #f1d6c5; --soft: #fdf0e7; color-scheme: light;
   --b1: #d0171f; --b2: #ed7d31; --b3: #f9b522; --btn-ink: #ffffff; --focus: #c0141b;
   --p1: #c8161d; --p2: #e2481f; --p3: #ed7d31; --p4: #f3a824; --p-ink: #ffffff; --p4-ink: #2a1611;
   --danger: #a3121a; --ok: #ed7d31;
   --display: "Saira", "Arial Black", "Segoe UI", sans-serif;
   --body: "Barlow", "Segoe UI", Roboto, system-ui, sans-serif;
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #160c09; --surface: #22140f; --ink: #f8ebe3; --muted: #c49d8b; --line: #3e271e; --soft: #301c15;
-  --b1: #ff3b30; --b2: #ff8a45; --b3: #ffc23a; --focus: #ff6a5a;
-  --p1: #e8312a; --p2: #f2582c; --p3: #ff8a45; --p4: #ffb43a; --danger: #ff6a5a; --ok: #ff8a45; color-scheme: dark } }
-:root[data-theme="dark"] {
-  --bg: #160c09; --surface: #22140f; --ink: #f8ebe3; --muted: #c49d8b; --line: #3e271e; --soft: #301c15;
-  --b1: #ff3b30; --b2: #ff8a45; --b3: #ffc23a; --focus: #ff6a5a;
-  --p1: #e8312a; --p2: #f2582c; --p3: #ff8a45; --p4: #ffb43a; --danger: #ff6a5a; --ok: #ff8a45; color-scheme: dark }
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -77,6 +70,14 @@ button { cursor: pointer; }
 .notice { background: var(--soft); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
 .notice p { margin: 0; font-size: .92rem; }
 
+.msg { border-radius: 14px; padding: 14px 16px; background: linear-gradient(135deg, #fff6e0, #ffe6d6); border: 1px solid #f7caac; display: grid; gap: 4px; }
+.msg h2 { margin: 0; font-family: var(--display); font-style: italic; font-weight: 800; text-transform: uppercase; font-size: 1.15rem; color: var(--b1); }
+.msg p { margin: 0; font-size: .95rem; }
+.msg ul { margin: 2px 0 0; padding-left: 18px; font-size: .92rem; }
+.msg li b { font-variant-numeric: tabular-nums; color: var(--b1); }
+.cheer { margin: 0; font-size: .9rem; font-weight: 600; color: var(--b1); }
+.goal { color: var(--muted); font-size: .85rem; }
+.goal b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .weekbar { display: flex; align-items: center; gap: 8px; }
 .wk-mid { flex: 1; text-align: center; min-width: 0; }
 .wk-rel { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--b1); }
@@ -313,7 +314,7 @@ function buildTabla(data, weeks, h) {
     sh.widths.set(b, 30); for (let k = 1; k <= per; k++) sh.widths.set(b + k, 16);
     sh.widths.set(b + per + 1, 24); sh.widths.set(b + per + 2, 3);
   }
-  const title = n ? `RFM GYM · SOBRECARGA PROGRESIVA · semanas del ${h.weekLabel(weeks[0]).split(' – ')[0]} al ${h.weekLabel(weeks[n - 1]).split(' – ')[1]}` : 'RFM GYM · SOBRECARGA PROGRESIVA';
+  const title = n ? `RFM GYM · semanas del ${h.weekLabel(weeks[0]).split(' – ')[0]} al ${h.weekLabel(weeks[n - 1]).split(' – ')[1]}` : 'RFM GYM';
   setCell(sh, 0, 0, title, S.TITLE);
   const byKey = new Map(); // "dayId|lunes" -> sesiones ordenadas
   for (const s of data.sessions) {
@@ -535,6 +536,64 @@ function history(exId) {
     .sort((a, b) => b.s.date.localeCompare(a.s.date));
 }
 
+/** Mejora respecto a la vez anterior: "+1 kg", "+2 rep" o null. */
+function improvement(e, last) {
+  if (!hasValues(e) || !last) return null;
+  if (e.kg != null && last.kg != null) {
+    if (e.kg > last.kg) return `+${fmtKg(Math.round((e.kg - last.kg) * 100) / 100)} kg`;
+    if (e.kg < last.kg) return null;
+  }
+  if (e.reps != null && last.reps != null && e.reps > last.reps && (e.kg == null || last.kg == null || e.kg === last.kg)) return `+${e.reps - last.reps} rep`;
+  return null;
+}
+function challenge(last) {
+  if (!last) return '';
+  if (last.kg != null && last.reps != null) return `${fmtKg(last.kg)} kg × ${last.reps + 1}`;
+  if (last.reps != null) return `${last.reps + 1} rep`;
+  return '';
+}
+function nextPendingDay() {
+  const done = new Set(sessionsOfWeek(currentMon()).map(s => s.dayId));
+  return data.program.days.find(d => !done.has(d.id));
+}
+function homeMessage() {
+  const today = todayStr();
+  if (!data.sessions.length) {
+    return `<section class="msg"><h2>¡Bienvenido!</h2><p>Empieza un día y apunta lo que levantes. La próxima vez te diré si has mejorado.</p></section>`;
+  }
+  const since = addDays(today, -6);
+  const ups = [];
+  for (const s of data.sessions.filter(x => x.date >= since).sort((a, b) => b.date.localeCompare(a.date))) {
+    const day = dayById(s.dayId); if (!day) continue;
+    for (const ex of day.exercises) {
+      const prev = lastBefore(ex.id, s);
+      const up = improvement(s.entries[ex.id], prev && prev.e);
+      if (up) ups.push({ name: ex.name, up, date: s.date });
+    }
+  }
+  const lastDate = data.sessions.reduce((m, s) => (s.date > m ? s.date : m), '0000-00-00');
+  const idle = Math.round((dnum(today) - dnum(lastDate)) / 1);
+  const next = nextPendingDay();
+  const doneWeek = new Set(sessionsOfWeek(currentMon()).map(s => s.dayId)).size;
+  const total = data.program.days.length;
+  if (idle >= 4) {
+    return `<section class="msg"><h2>¡Te echamos de menos!</h2><p>Llevas ${idle} días sin entrenar.${next ? ` Hoy es buen día para el <b>${esc(next.name)}</b>.` : ''}</p></section>`;
+  }
+  if (ups.length) {
+    const list = ups.slice(0, 3).map(u => `<li>${esc(u.name)}: <b>${u.up}</b> <span class="goal">(${fmtDay(u.date)})</span></li>`).join('');
+    const more = ups.length > 3 ? `<p class="goal">y ${ups.length - 3} más.</p>` : '';
+    return `<section class="msg"><h2>¡Vas mejorando!</h2><p>En los últimos 7 días has superado tu marca en ${ups.length} ${ups.length === 1 ? 'ejercicio' : 'ejercicios'}:</p><ul>${list}</ul>${more}</section>`;
+  }
+  if (doneWeek >= total && total) {
+    return `<section class="msg"><h2>¡Semana completa!</h2><p>Has hecho los ${total} días de esta semana. Buen trabajo.</p></section>`;
+  }
+  return `<section class="msg"><h2>¡A por ello!</h2><p>Esta semana llevas ${doneWeek} de ${total} días.${next ? ` El siguiente: <b>${esc(next.name)}</b>. Intenta subir 1 repetición o un poco de peso respecto a la última vez.` : ''}</p></section>`;
+}
+function cheerText(e, last) {
+  const up = improvement(e, last && last.e);
+  return up ? `▲ ${up} respecto al ${fmtDay(last.s.date)}. ¡Muy bien!` : '';
+}
+
 // ================== Utilidades UI ==================
 const $ = (sel) => document.querySelector(sel);
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -610,9 +669,9 @@ function renderStrip() {
 
 function renderHome() {
   const cur = currentMon();
-  setHeader('RFM GYM', 'Sobrecarga progresiva', true);
+  setHeader('RFM GYM', '', true);
   const sun = addDays(selMon, 6);
-  let h = `<section class="weekbar" aria-label="Semana">
+  let h = homeMessage() + `<section class="weekbar" aria-label="Semana">
     <button class="icon-btn" data-act="wk" data-d="-7" ${selMon <= firstMon() ? 'disabled' : ''} aria-label="Semana anterior">‹</button>
     <div class="wk-mid"><div class="wk-rel">${weekRel(selMon)}</div>
       <div class="wk-label">${fmtShort(selMon)} <span>al</span> ${fmtShort(sun)}<small>/${sun.slice(2, 4)}</small></div>
@@ -658,7 +717,8 @@ function renderSession(id) {
     h += `<article class="ex" data-ex="${ex.id}">
       <header><div><h3>${esc(ex.name)}</h3>${ex.target ? `<p class="target">Objetivo <b>${esc(ex.target)}</b></p>` : ''}</div>
         <button class="link" data-act="hist" data-id="${ex.id}">Histórico</button></header>
-      <p class="last">${last ? `Última vez <span>${fmtDay(last.s.date)}</span> <b>${esc(fmtEntry(last.e))}</b>` : 'Sin registros anteriores'}</p>
+      <p class="last">${last ? `Última vez <span>${fmtDay(last.s.date)}</span> <b>${esc(fmtEntry(last.e))}</b>` : 'Sin registros anteriores'}${challenge(last && last.e) ? `<br><span class="goal">Reto de hoy: <b>${esc(challenge(last.e))}</b></span>` : ''}</p>
+      <p class="cheer" id="cheer-${ex.id}" ${cheerText(e, last) ? '' : 'hidden'}>${esc(cheerText(e, last))}</p>
       <div class="steps">
         <div class="step"><button class="icon-btn" data-act="dec" data-f="kg" aria-label="Menos kg">−</button>
           <label><input id="kg-${ex.id}" data-f="kg" inputmode="decimal" autocomplete="off" value="${e.kg != null ? fmtKg(e.kg) : ''}" placeholder="${last && last.e.kg != null ? fmtKg(last.e.kg) : '—'}"><span>kg</span></label>
@@ -775,6 +835,8 @@ function updEntry(sid, ex, patch) {
   const e = Object.assign({}, s.entries[ex.id] || {}, patch, { exerciseName: fullName(ex) });
   if (hasData(e)) s.entries[ex.id] = e; else delete s.entries[ex.id];
   save();
+  const c = document.getElementById(`cheer-${ex.id}`);
+  if (c) { const t = cheerText(e, lastBefore(ex.id, s)); c.textContent = t; c.hidden = !t; }
 }
 
 function startSession(dayId) {
