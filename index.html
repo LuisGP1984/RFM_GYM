@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#d0171f">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>RFM GYM</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:ital,wght@1,700;1,800;1,900&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: una columna de app móvil (máx. 560px), cabecera fija. Colores cálidos del Excel (naranja ED7D31, melocotón F7CAAC/FBE4D5) y degradado amarillo-naranja-rojo del logo */
+:root {
+  --bg: #fdf3ec; --surface: #ffffff; --ink: #2a1611; --muted: #7d5c50; --line: #f1d6c5; --soft: #fbe4d5;
+  --b1: #d0171f; --b2: #ed7d31; --b3: #f9b522; --btn-ink: #ffffff; --focus: #c0141b;
+  --p1: #c8161d; --p2: #e2481f; --p3: #ed7d31; --p4: #f3a824; --p-ink: #ffffff; --p4-ink: #2a1611;
+  --danger: #a3121a; --ok: #ed7d31;
+  --display: "Saira", "Arial Black", "Segoe UI", sans-serif;
+  --body: "Barlow", "Segoe UI", Roboto, system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #160c09; --surface: #22140f; --ink: #f8ebe3; --muted: #c49d8b; --line: #3e271e; --soft: #301c15;
+  --b1: #ff3b30; --b2: #ff8a45; --b3: #ffc23a; --focus: #ff6a5a;
+  --p1: #e8312a; --p2: #f2582c; --p3: #ff8a45; --p4: #ffb43a; --danger: #ff6a5a; --ok: #ff8a45; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #160c09; --surface: #22140f; --ink: #f8ebe3; --muted: #c49d8b; --line: #3e271e; --soft: #301c15;
+  --b1: #ff3b30; --b2: #ff8a45; --b3: #ffc23a; --focus: #ff6a5a;
+  --p1: #e8312a; --p2: #f2582c; --p3: #ff8a45; --p4: #ffb43a; --danger: #ff6a5a; --ok: #ff8a45; color-scheme: dark }
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.topbar h1, .wk-label, .day h2, .chart h2, .sheet h2, .ed-day h2, .best b, .h-w, .plate, .step input { font-style: italic; }
+.topbar { border-bottom: 3px solid transparent; border-image: linear-gradient(90deg, var(--b3), var(--b2), var(--b1)) 1; }
+.wm { display: inline-flex; align-items: baseline; gap: .3em; font-weight: 900; font-size: 1.9rem; letter-spacing: -.01em; line-height: 1; padding-right: .15em; }
+.wm b { font-weight: 900; background: linear-gradient(180deg, var(--b3) 5%, var(--b2) 45%, var(--b1) 85%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.wm i { font-style: italic; color: var(--b1); font-size: .72em; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.4; margin: 0; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+button, input, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.app { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px; }
+
+.topbar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line);
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
+  display: flex; align-items: center; gap: 8px; }
+.topbar .titles { flex: 1; min-width: 0; }
+.topbar h1 { font-family: var(--display); font-weight: 700; font-size: 1.6rem; line-height: 1.05; margin: 0; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar p { margin: 0; color: var(--muted); font-size: .85rem; }
+.menu { position: absolute; right: max(16px, env(safe-area-inset-right, 0px)); top: 100%; margin-top: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / .18); padding: 6px; display: grid; min-width: 230px; }
+.menu button { text-align: left; background: none; border: 0; padding: 12px 14px; border-radius: 6px; }
+.menu button:hover { background: var(--soft); }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+
+#view { display: grid; gap: 14px; padding-top: 16px; }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); font-size: 1.4rem; line-height: 1; display: inline-grid; place-items: center; flex: none; }
+.icon-btn.sm { width: 34px; height: 34px; font-size: 1.05rem; }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.icon-btn.plain { border: 0; background: none; }
+.btn { border-radius: 999px; padding: 10px 18px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; }
+.btn.solid { background: linear-gradient(180deg, var(--b2), var(--b1)); color: var(--btn-ink); border-color: transparent; font-family: var(--display); font-style: italic; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+.btn.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn.ghost { background: transparent; }
+.btn.sm { padding: 6px 14px; font-size: .9rem; }
+.btn.wide { width: 100%; }
+.link { background: none; border: 0; padding: 6px 0; color: var(--b1); font-weight: 600; text-align: left; }
+.danger-t { color: var(--danger); }
+.empty, .hint { color: var(--muted); font-size: .9rem; margin: 0; }
+.stack { display: grid; gap: 10px; }
+.row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.notice { background: var(--soft); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.notice p { margin: 0; font-size: .92rem; }
+
+.weekbar { display: flex; align-items: center; gap: 8px; }
+.wk-mid { flex: 1; text-align: center; min-width: 0; }
+.wk-label { font-family: var(--display); font-size: 2.2rem; line-height: 1; text-transform: uppercase; font-weight: 600; }
+.wk-label b { font-weight: 900; color: var(--b1); font-variant-numeric: tabular-nums; }
+.wk-label span { color: var(--muted); font-size: 1.3rem; }
+.wk-dates { color: var(--muted); font-size: .9rem; font-variant-numeric: tabular-nums; }
+.progress { display: grid; grid-template-columns: repeat(auto-fit, minmax(10px, 1fr)); gap: 4px; }
+.progress i { height: 6px; border-radius: 3px; background: var(--line); }
+.progress i.done { background: var(--b2); }
+.progress i.on { background: var(--b1); }
+
+.plate { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex: none; font-family: var(--display); font-weight: 700; font-size: 1.3rem; color: var(--p-ink);
+  box-shadow: inset 0 0 0 4px rgb(255 255 255 / .22), inset 0 0 0 11px rgb(0 0 0 / .08); }
+.p1 { background: var(--p1); } .p2 { background: var(--p2); } .p3 { background: var(--p3); } .p4 { background: var(--p4); color: var(--p4-ink); }
+
+.day { background: var(--surface); border-radius: 14px; padding: 14px; display: grid; gap: 10px; border: 1px solid var(--line); }
+.day header { display: flex; gap: 12px; align-items: center; }
+.day-t { flex: 1; min-width: 0; }
+.day h2 { font-family: var(--display); font-size: 1.5rem; margin: 0; line-height: 1; text-transform: uppercase; }
+.day-t p { margin: 2px 0 0; color: var(--muted); font-size: .82rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.state { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--muted); flex: none; }
+.state.ok { background: var(--ok); color: #2a1611; }
+.sess { display: flex; align-items: center; gap: 10px; width: 100%; background: var(--soft); border: 0; border-radius: 10px; padding: 12px 14px; text-align: left; font-weight: 600; }
+.sess span:first-child { flex: 1; }
+.sess .cnt { color: var(--muted); font-weight: 500; font-size: .9rem; font-variant-numeric: tabular-nums; }
+
+.sess-meta { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.field { display: grid; gap: 4px; }
+.field > span { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.field input { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 9px 10px; min-width: 0; width: 100%; }
+.mini-step { display: flex; align-items: center; gap: 10px; }
+.mini-step b { min-width: 2ch; text-align: center; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+
+.ex { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
+.ex header { display: flex; gap: 10px; align-items: start; justify-content: space-between; }
+.ex h3 { margin: 0; font-size: 1.08rem; font-weight: 600; }
+.target { margin: 0; color: var(--muted); font-size: .85rem; }
+.target b { font-variant-numeric: tabular-nums; color: var(--ink); font-weight: 600; }
+.last { margin: 0; font-size: .9rem; color: var(--muted); }
+.last span { font-variant-numeric: tabular-nums; }
+.last b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.step { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.step .icon-btn { width: 38px; height: 38px; font-size: 1.2rem; }
+.step label { flex: 1; min-width: 0; position: relative; }
+.step input { width: 100%; text-align: center; font-family: var(--display); font-size: 1.5rem; font-weight: 700; padding: 6px 2px 16px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--soft); font-variant-numeric: tabular-nums; }
+.step input::placeholder { color: var(--muted); opacity: .55; }
+.step label span { position: absolute; left: 0; right: 0; bottom: 4px; text-align: center; font-size: .68rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); pointer-events: none; }
+.ex footer { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.ex textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; background: var(--surface); resize: vertical; }
+@media (max-width: 360px) { .steps { grid-template-columns: 1fr; } }
+
+.chart { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.chart h2 { font-family: var(--display); text-transform: uppercase; font-size: 1.2rem; margin: 0 0 6px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart .grid { stroke: var(--line); stroke-dasharray: 3 3; }
+.chart .ax { fill: var(--muted); font-size: 10px; font-family: var(--body); }
+.chart .area { fill: var(--b2); opacity: .12; }
+.chart .line { fill: none; stroke: var(--b1); stroke-width: 2.5; stroke-linejoin: round; }
+.chart .dot { fill: var(--b1); }
+.chart .dot.end { fill: var(--surface); stroke: var(--b1); stroke-width: 2.5; }
+.best { margin: 0; font-size: 1rem; }
+.best b { font-family: var(--display); font-size: 1.4rem; }
+.hist { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.hist li + li { border-top: 1px solid var(--line); }
+.hist button { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: none; border: 0; text-align: left; }
+.h-w { font-family: var(--display); font-weight: 700; font-size: 1.15rem; width: 2.6ch; color: var(--muted); }
+.h-d { flex: 1; min-width: 0; font-size: .9rem; }
+.h-d em { display: block; font-style: normal; color: var(--muted); font-size: .82rem; }
+.h-v { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+.prog { display: grid; gap: 12px; }
+.ed-day header { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.ed-day h2 { flex: 1; font-family: var(--display); text-transform: uppercase; font-size: 1.4rem; margin: 0; }
+.ed-day ul { list-style: none; margin: 0; padding: 0; }
+.ed-day li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+.ed-n { flex: 1; min-width: 0; display: grid; }
+.ed-n span { color: var(--muted); font-size: .82rem; }
+.ed-b { display: flex; gap: 4px; flex: none; }
+
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgb(0 0 0 / .45); display: grid; align-items: end; justify-items: center;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) calc(16px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); }
+.sheet { background: var(--surface); border-radius: 16px; padding: 18px; width: 100%; max-width: 520px; display: grid; gap: 12px; }
+.sheet h2 { margin: 0; font-family: var(--display); text-transform: uppercase; font-size: 1.5rem; }
+.sheet-body { display: grid; gap: 10px; }
+.sheet-body p { margin: 0; }
+.sheet-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 30; background: var(--ink); color: var(--bg);
+  padding: 10px 18px; border-radius: 999px; font-weight: 500; max-width: calc(100% - 32px); }
+.warn { background: var(--danger); color: #fff; padding: 10px 14px; border-radius: 10px; margin-top: 12px; font-size: .9rem; }
+@media (prefers-reduced-motion: no-preference) { .sheet { animation: up .18s ease-out; } @keyframes up { from { transform: translateY(16px); opacity: .6; } } }
+</style>
+
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <button id="back" class="icon-btn plain" aria-label="Volver" hidden>‹</button>
+    <div class="titles"><h1 id="hTitle">RFM GYM</h1><p id="hSub"></p></div>
+    <button id="delSession" class="btn ghost sm" hidden>Borrar</button>
+    <button id="menuBtn" class="icon-btn plain" aria-label="Menú">⋮</button>
+    <div id="menu" class="menu" hidden>
+      <button data-menu="editor">Editar rutina</button>
+      <button data-menu="xlsx">Exportar a Excel</button>
+      <hr>
+      <button data-menu="backup">Guardar copia de seguridad</button>
+      <button data-menu="import">Restaurar copia de seguridad</button>
+    </div>
+  </div>
+  <div id="storageWarn" class="warn" hidden>Este navegador no deja guardar datos (¿modo incógnito?). Lo que apuntes se perderá al cerrar.</div>
+  <main id="view"></main>
+</div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<div id="modal" class="overlay" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script>
+// ---- Exportación a Excel (.xlsx) sin librerías: zip "store" + XML ----
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(bytes) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < bytes.length; i++) c = CRC_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function zipStore(files) { // files: [{name, data: Uint8Array}]
+  const enc = new TextEncoder();
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name);
+    const crc = crc32(f.data);
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint16(8, 0, true); h.setUint16(10, 0, true); h.setUint16(12, 0x21, true);
+    h.setUint32(14, crc, true); h.setUint32(18, f.data.length, true); h.setUint32(22, f.data.length, true);
+    h.setUint16(26, name.length, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), name, f.data);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+    c.setUint16(10, 0, true); c.setUint16(12, 0, true); c.setUint16(14, 0x21, true);
+    c.setUint32(16, crc, true); c.setUint32(20, f.data.length, true); c.setUint32(24, f.data.length, true);
+    c.setUint16(28, name.length, true); c.setUint32(42, offset, true);
+    central.push(new Uint8Array(c.buffer), name);
+    offset += 30 + name.length + f.data.length;
+  }
+  const cdSize = central.reduce((s, p) => s + p.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, cdSize, true); e.setUint32(16, offset, true);
+  const all = [...parts, ...central, new Uint8Array(e.buffer)];
+  const out = new Uint8Array(all.reduce((s, p) => s + p.length, 0));
+  let pos = 0;
+  for (const p of all) { out.set(p, pos); pos += p.length; }
+  return out;
+}
+
+const S = { TITLE: 1, HEADER: 2, EXERCISE: 3, CELL: 4, NOTE: 5, DATE: 6, NUM: 7, TEXT: 8, CELL_B: 9, NOTE_B: 10 };
+
+function xmlEsc(s) {
+  return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function colName(c) { let n = c + 1, s = ''; while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+function cellRef(r, c) { return colName(c) + (r + 1); }
+
+function newSheet() { return { rows: new Map(), merges: [], widths: new Map() }; }
+function setCell(sh, r, c, v, style, isNum) {
+  if (!sh.rows.has(r)) sh.rows.set(r, new Map());
+  sh.rows.get(r).set(c, { v, style, isNum: !!isNum });
+}
+
+function sheetXml(sh) {
+  let x = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
+  if (sh.widths.size) {
+    x += '<cols>';
+    [...sh.widths.keys()].sort((a, b) => a - b).forEach(c => { x += `<col min="${c + 1}" max="${c + 1}" width="${sh.widths.get(c)}" customWidth="1"/>`; });
+    x += '</cols>';
+  }
+  x += '<sheetData>';
+  [...sh.rows.keys()].sort((a, b) => a - b).forEach(r => {
+    x += `<row r="${r + 1}">`;
+    const cells = sh.rows.get(r);
+    [...cells.keys()].sort((a, b) => a - b).forEach(c => {
+      const cell = cells.get(c);
+      const ref = cellRef(r, c);
+      if (cell.isNum) x += `<c r="${ref}" s="${cell.style}"><v>${cell.v}</v></c>`;
+      else if (cell.v === '' || cell.v == null) x += `<c r="${ref}" s="${cell.style}"/>`;
+      else x += `<c r="${ref}" s="${cell.style}" t="inlineStr"><is><t xml:space="preserve">${xmlEsc(cell.v)}</t></is></c>`;
+    });
+    x += '</row>';
+  });
+  x += '</sheetData>';
+  if (sh.merges.length) x += `<mergeCells count="${sh.merges.length}">` + sh.merges.map(m => `<mergeCell ref="${m}"/>`).join('') + '</mergeCells>';
+  return x + '</worksheet>';
+}
+
+function buildTabla(data, fmtEntry, fullName) {
+  const sh = newSheet();
+  const p = data.program, per = 4;
+  const groups = Math.ceil(p.weeks / per), gw = per + 3;
+  for (let g = 0; g < groups; g++) {
+    const b = g * gw;
+    sh.widths.set(b, 30); for (let k = 1; k <= per; k++) sh.widths.set(b + k, 14);
+    sh.widths.set(b + per + 1, 24); sh.widths.set(b + per + 2, 3);
+  }
+  setCell(sh, 0, 0, 'TABLA PARA APUNTAR LOS PESOS Y LLEVAR UNA SOBRECARGA PROGRESIVA', S.TITLE);
+  let row = 2;
+  for (const day of p.days) {
+    const hr = row;
+    for (let g = 0; g < groups; g++) {
+      const b = g * gw, nc = b + per + 1;
+      setCell(sh, hr, b, day.name, S.HEADER); setCell(sh, hr + 1, b, '', S.HEADER);
+      sh.merges.push(`${cellRef(hr, b)}:${cellRef(hr + 1, b)}`);
+      for (let k = 1; k <= per; k++) {
+        const w = g * per + k;
+        if (w <= p.weeks) { setCell(sh, hr, b + k, 'semana ' + w, S.HEADER); setCell(sh, hr + 1, b + k, 'KG × REPS', S.HEADER); }
+      }
+      setCell(sh, hr, nc, 'notas', S.HEADER); setCell(sh, hr + 1, nc, '', S.HEADER);
+      sh.merges.push(`${cellRef(hr, nc)}:${cellRef(hr + 1, nc)}`);
+      setCell(sh, hr + 2, b, 'ejercicios', S.EXERCISE);
+      for (let k = 1; k <= per + 1; k++) setCell(sh, hr + 2, b + k, '', k <= per ? S.CELL : S.NOTE);
+    }
+    let r = hr + 3;
+    for (const [ei, ex] of day.exercises.entries()) {
+      const cs = ei % 2 === 0 ? S.CELL_B : S.CELL, ns = ei % 2 === 0 ? S.NOTE_B : S.NOTE;
+      for (let g = 0; g < groups; g++) {
+        const b = g * gw, notes = [];
+        setCell(sh, r, b, fullName(ex), S.EXERCISE);
+        for (let k = 1; k <= per; k++) {
+          const w = g * per + k;
+          if (w > p.weeks) continue;
+          const entries = data.sessions.filter(s => s.dayId === day.id && s.week === w)
+            .sort((a, c) => a.date.localeCompare(c.date))
+            .map(s => s.entries[ex.id]).filter(Boolean);
+          setCell(sh, r, b + k, entries.map(fmtEntry).filter(Boolean).join(' / '), cs);
+          entries.forEach(e => { if (e.note && e.note.trim()) notes.push(`S${w}: ${e.note.trim()}`); });
+        }
+        setCell(sh, r, b + per + 1, notes.join('; '), ns);
+      }
+      r++;
+    }
+    row = r + 2;
+  }
+  return sh;
+}
+
+function buildDatos(data, fullName) {
+  const sh = newSheet();
+  ['Fecha', 'Semana', 'Día', 'Ejercicio', 'Kg', 'Reps', 'Nota'].forEach((h, i) => setCell(sh, 0, i, h, S.HEADER));
+  [12, 9, 12, 34, 8, 8, 40].forEach((w, i) => sh.widths.set(i, w));
+  const days = new Map(data.program.days.map(d => [d.id, d]));
+  let r = 1;
+  const sessions = [...data.sessions].sort((a, b) => a.date.localeCompare(b.date) || a.week - b.week);
+  for (const s of sessions) {
+    const day = days.get(s.dayId);
+    const order = day ? day.exercises.map(e => e.id) : [];
+    const ids = Object.keys(s.entries).sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia < 0 ? 1e9 : ia) - (ib < 0 ? 1e9 : ib);
+    });
+    for (const id of ids) {
+      const e = s.entries[id];
+      if (!e || (e.kg == null && e.reps == null && !(e.note || '').trim())) continue;
+      const ex = day && day.exercises.find(x => x.id === id);
+      const [y, m, d] = s.date.split('-').map(Number);
+      const serial = Date.UTC(y, m - 1, d) / 864e5 + 25569;
+      setCell(sh, r, 0, serial, S.DATE, true);
+      setCell(sh, r, 1, s.week, S.NUM, true);
+      setCell(sh, r, 2, day ? day.name : s.dayName, S.TEXT);
+      setCell(sh, r, 3, ex ? fullName(ex) : (e.exerciseName || ''), S.TEXT);
+      if (e.kg != null) setCell(sh, r, 4, e.kg, S.NUM, true); else setCell(sh, r, 4, '', S.TEXT);
+      if (e.reps != null) setCell(sh, r, 5, e.reps, S.NUM, true); else setCell(sh, r, 5, '', S.TEXT);
+      setCell(sh, r, 6, e.note || '', S.TEXT);
+      r++;
+    }
+  }
+  return sh;
+}
+
+const XLSX_STATIC = {
+  '[Content_Types].xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>',
+  '_rels/.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>',
+  'xl/workbook.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Tabla" sheetId="1" r:id="rId1"/><sheet name="Datos" sheetId="2" r:id="rId2"/></sheets></workbook>',
+  'xl/_rels/workbook.xml.rels': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>',
+  'xl/styles.xml': '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFED7D31"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF7CAAC"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFBE4D5"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFBFBFBF"/></left><right style="thin"><color rgb="FFBFBFBF"/></right><top style="thin"><color rgb="FFBFBFBF"/></top><bottom style="thin"><color rgb="FFBFBFBF"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="11"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyBorder="1" applyFont="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyBorder="1" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="14" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyBorder="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'
+};
+
+function buildXlsx(data, fmtEntry, fullName) {
+  const enc = new TextEncoder();
+  const files = Object.entries(XLSX_STATIC).map(([name, xml]) => ({ name, data: enc.encode(xml) }));
+  files.push({ name: 'xl/worksheets/sheet1.xml', data: enc.encode(sheetXml(buildTabla(data, fmtEntry, fullName))) });
+  files.push({ name: 'xl/worksheets/sheet2.xml', data: enc.encode(sheetXml(buildDatos(data, fullName))) });
+  return zipStore(files);
+}
+
+</script>
+<script>
+// ================== Datos ==================
+const KEY = 'sobrecarga.v1';
+const WD = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function dnum(s) { const [y, m, d] = s.split('-').map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); }
+function dstr(n) { return new Date(n * 864e5).toISOString().slice(0, 10); }
+function todayStr() { const t = new Date(); return dstr(Math.round(Date.UTC(t.getFullYear(), t.getMonth(), t.getDate()) / 864e5)); }
+function dow(s) { return (new Date(dnum(s) * 864e5).getUTCDay() + 6) % 7; }
+function mondayOf(s) { return dstr(dnum(s) - dow(s)); }
+function addDays(s, n) { return dstr(dnum(s) + n); }
+function weekFor(start, date) { const d = dnum(date) - dnum(start); return d < 0 ? 1 : Math.floor(d / 7) + 1; }
+function weekStart(start, w) { return addDays(start, (w - 1) * 7); }
+function fmtShort(s) { const [, m, d] = s.split('-'); return `${d}/${m}`; }
+function fmtDay(s) { return `${WD[dow(s)]} ${fmtShort(s)}`; }
+function fmtLong(s) { const [y] = s.split('-'); return `${fmtDay(s)}/${y}`; }
+
+function fmtKg(n) { const r = Math.round(n * 100) / 100; return String(r).replace('.', ','); }
+function parseKg(t) { t = String(t).trim().replace(',', '.'); if (!t) return null; const n = Number(t); return isFinite(n) && n >= 0 ? n : null; }
+function parseReps(t) { t = String(t).trim(); if (!/^\d+$/.test(t)) return null; return parseInt(t, 10); }
+function fmtEntry(e) {
+  if (!e) return '';
+  const kg = e.kg != null ? fmtKg(e.kg) + ' kg' : null;
+  if (kg && e.reps != null) return `${kg} × ${e.reps}`;
+  if (kg) return kg;
+  if (e.reps != null) return `${e.reps} rep`;
+  return '';
+}
+function fullName(ex) { return ex.target ? `${ex.name} ${ex.target}` : ex.name; }
+function hasValues(e) { return !!e && (e.kg != null || e.reps != null); }
+function hasData(e) { return hasValues(e) || !!(e && e.note && e.note.trim()); }
+
+function parseEx(id, full) {
+  const m = full.trim().match(/^(.*?)\s+(\d+(?:x\d+)*)$/);
+  return m ? { id, name: m[1], target: m[2], stepKg: 2.5 } : { id, name: full.trim(), target: '', stepKg: 2.5 };
+}
+function defaultDays() {
+  const src = [
+    ['Día 1', ['Prensa horizontal 12x12x10', 'Sentadilla 12x10x10', 'Sentadilla búlgara 10', 'Step Ups 10', 'Sentadilla goblet 12', 'Abducción 15']],
+    ['Día 2', ['Press hombros manc 12x10x10', 'Elev laterales 15x12x12', 'Dominadas 12x10x10', 'Remo polea 15x12x10', 'Superserie Curl biceps 15', 'Superserie Commandos']],
+    ['Día 3', ['Sentadilla Smith 12x10x10', 'Peso muerto barra 10', 'Hip thrust 12x10x10', 'Sentadilla sumo step 15', 'Zancada trasera 12', 'Femoral maquina 15x12x12']],
+    ['Día 4', ['Remo barra 12', 'Press pecho mancuernas 12', 'Jalón al pecho 12x10x10', 'Deltoides posterior maq 15', 'Face pulls 12', 'Extensión triceps polea 15']],
+  ];
+  return src.map(([name, list], i) => ({ id: `d${i + 1}`, name, exercises: list.map((f, j) => parseEx(`d${i + 1}e${j + 1}`, f)) }));
+}
+
+/** Primera vez: rutina del Excel + lo apuntado en la semana 1 del Excel (fechas aproximadas). */
+function seedData() {
+  const start = addDays(mondayOf(todayStr()), -7);
+  const days = defaultDays();
+  const nm = (id) => fullName(days.flatMap(d => d.exercises).find(e => e.id === id));
+  const en = (id, kg, reps, note = '') => [id, { kg, reps, note, exerciseName: nm(id) }];
+  return {
+    program: { startDate: start, weeks: 12, days },
+    sessions: [
+      { id: uid(), date: addDays(start, 1), week: 1, dayId: 'd2', dayName: 'Día 2', entries: Object.fromEntries([
+        en('d2e1', 8, 10), en('d2e2', 4, null), en('d2e3', 35, null), en('d2e4', 25, 8), en('d2e5', 7.5, 12)]) },
+      { id: uid(), date: addDays(start, 3), week: 1, dayId: 'd4', dayName: 'Día 4', entries: Object.fromEntries([
+        en('d4e1', 20, 15), en('d4e2', 8, 12), en('d4e3', 25, 10), en('d4e4', 20, 15, 'uni'), en('d4e5', 10, 12), en('d4e6', 10, 12)]) },
+    ],
+    seeded: true,
+  };
+}
+
+let storageOk = true;
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const d = JSON.parse(raw); if (d && d.program && Array.isArray(d.sessions)) return d; }
+  } catch (e) { storageOk = false; }
+  return null;
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(data)); storageOk = true; }
+  catch (e) { storageOk = false; }
+}
+
+let data = load();
+if (!data) { data = seedData(); save(); }
+
+// ================== Estado de vista ==================
+const nav = [{ v: 'home' }];
+let selWeek = currentWeek();
+let noteOpen = new Set();
+
+function currentWeek() { return weekFor(data.program.startDate, todayStr()); }
+function maxWeek() { return Math.max(data.program.weeks, currentWeek(), ...data.sessions.map(s => s.week), 1); }
+function curView() { return nav[nav.length - 1]; }
+function go(v) { nav.push(v); render(true); }
+function back() { if (nav.length > 1) nav.pop(); render(true); }
+function dayById(id) { return data.program.days.find(d => d.id === id); }
+function sessionById(id) { return data.sessions.find(s => s.id === id); }
+function allExercises() { return data.program.days.flatMap(d => d.exercises); }
+
+function lastBefore(exId, s) {
+  let best = null;
+  for (const o of data.sessions) {
+    if (o.id === s.id || o.date > s.date) continue;
+    const e = o.entries[exId];
+    if (!hasValues(e)) continue;
+    if (!best || o.date > best.s.date || (o.date === best.s.date && o.week > best.s.week)) best = { s: o, e };
+  }
+  return best;
+}
+function history(exId) {
+  return data.sessions.filter(s => hasData(s.entries[exId])).map(s => ({ s, e: s.entries[exId] }))
+    .sort((a, b) => b.s.date.localeCompare(a.s.date) || b.s.week - a.s.week);
+}
+
+// ================== Utilidades UI ==================
+const $ = (sel) => document.querySelector(sel);
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function plateClass(day) { const i = data.program.days.indexOf(day); return 'plate p' + ((i < 0 ? 0 : i) % 4 + 1); }
+function plateNum(day) { const m = day.name.match(/\d+/); return m ? m[0] : day.name.slice(0, 1); }
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2600);
+}
+
+function modal({ title, body = '', confirm = 'Aceptar', danger = false, onConfirm }) {
+  const m = $('#modal');
+  m.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mt">
+    <h2 id="mt">${esc(title)}</h2><div class="sheet-body">${body}</div>
+    <div class="sheet-actions"><button type="button" class="btn ghost" data-m="cancel">Cancelar</button>
+    <button type="button" class="btn ${danger ? 'danger' : 'solid'}" data-m="ok">${esc(confirm)}</button></div></div>`;
+  m.hidden = false;
+  const first = m.querySelector('input, textarea'); (first || m.querySelector('[data-m="ok"]')).focus();
+  m.onclick = (ev) => {
+    const b = ev.target.closest('[data-m]');
+    if (ev.target === m || (b && b.dataset.m === 'cancel')) { m.hidden = true; return; }
+    if (b && b.dataset.m === 'ok') { if (onConfirm(m) !== false) m.hidden = true; }
+  };
+}
+
+function download(name, bytes, mime) {
+  const blob = new Blob([bytes], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+// ================== Render ==================
+function render(scrollTop) {
+  const v = curView();
+  $('#back').hidden = nav.length === 1;
+  $('#menuBtn').hidden = v.v !== 'home';
+  $('#delSession').hidden = v.v !== 'session';
+  $('#menu').hidden = true;
+  let html = '';
+  if (v.v === 'home') html = renderHome();
+  else if (v.v === 'session') html = renderSession(v.id);
+  else if (v.v === 'history') html = renderHistory(v.id);
+  else if (v.v === 'editor') html = renderEditor();
+  $('#view').innerHTML = html;
+  $('#storageWarn').hidden = storageOk;
+  if (scrollTop) window.scrollTo(0, 0);
+}
+
+function setHeader(title, sub, brand) {
+  if (brand) $('#hTitle').innerHTML = '<span class="wm" aria-label="RFM GYM"><b>RFM</b><i>GYM</i></span>';
+  else $('#hTitle').textContent = title;
+  $('#hSub').textContent = sub || '';
+}
+
+function renderHome() {
+  const p = data.program, w = selWeek, cur = currentWeek();
+  const ws = weekStart(p.startDate, w);
+  setHeader('RFM GYM', `Sobrecarga progresiva · ${p.weeks} semanas`, true);
+  let h = '';
+  if (data.seeded) {
+    h += `<div class="notice"><p>He copiado lo que tenías apuntado en la semana 1 de tu Excel (Día 2 y Día 4), con fechas aproximadas.</p>
+      <div class="row-btns"><button class="btn ghost sm" data-act="keepSeed">Mantener</button><button class="btn ghost sm" data-act="clearSeed">Empezar de cero</button></div></div>`;
+  }
+  h += `<section class="weekbar" aria-label="Semana">
+    <button class="icon-btn" data-act="wk" data-d="-1" ${w <= 1 ? 'disabled' : ''} aria-label="Semana anterior">‹</button>
+    <div class="wk-mid"><div class="wk-label">Semana <b>${w}</b><span>/${p.weeks}</span></div>
+      <div class="wk-dates">${fmtShort(ws)} – ${fmtShort(addDays(ws, 6))}${w === cur ? ' · esta semana' : ''}${w > p.weeks ? ' · fuera del programa' : ''}</div>
+      ${w !== cur ? `<button class="link" data-act="wkNow">Ir a la semana actual</button>` : ''}</div>
+    <button class="icon-btn" data-act="wk" data-d="1" ${w >= maxWeek() + 1 ? 'disabled' : ''} aria-label="Semana siguiente">›</button>
+  </section>
+  <div class="progress" aria-hidden="true">${Array.from({ length: p.weeks }, (_, i) => {
+    const n = i + 1, done = data.sessions.some(s => s.week === n);
+    return `<i class="${n === w ? 'on' : ''} ${done ? 'done' : ''}"></i>`;
+  }).join('')}</div>`;
+  if (!p.days.length) h += `<p class="empty">No hay días en la rutina. Añádelos en Menú › Editar rutina.</p>`;
+  for (const day of p.days) {
+    const ss = data.sessions.filter(s => s.dayId === day.id && s.week === w).sort((a, b) => a.date.localeCompare(b.date));
+    h += `<article class="day">
+      <header><span class="${plateClass(day)}">${esc(plateNum(day))}</span>
+        <div class="day-t"><h2>${esc(day.name)}</h2><p>${esc(day.exercises.map(e => e.name).join(' · '))}</p></div>
+        <span class="state ${ss.length ? 'ok' : ''}">${ss.length ? 'Hecho' : 'Pendiente'}</span></header>`;
+    for (const s of ss) {
+      const n = day.exercises.filter(e => hasValues(s.entries[e.id])).length;
+      h += `<button class="sess" data-act="open" data-id="${s.id}"><span>${fmtDay(s.date)}</span><span class="cnt">${n}/${day.exercises.length} apuntados</span><span aria-hidden="true">›</span></button>`;
+    }
+    h += ss.length
+      ? `<button class="link" data-act="start" data-id="${day.id}">+ Repetir este día esta semana</button>`
+      : `<button class="btn solid wide" data-act="start" data-id="${day.id}">Empezar ${esc(day.name)}</button>`;
+    h += `</article>`;
+  }
+  return h;
+}
+
+function renderSession(id) {
+  const s = sessionById(id);
+  if (!s) { nav.pop(); return renderHome(); }
+  const day = dayById(s.dayId);
+  setHeader(day ? day.name : s.dayName, `Semana ${s.week} · ${fmtLong(s.date)}`);
+  const exs = day ? day.exercises : [];
+  let h = `<section class="sess-meta">
+    <label class="field"><span>Fecha</span><input type="date" id="sDate" value="${s.date}" data-act-change="sDate"></label>
+    <div class="field"><span>Semana</span><div class="mini-step">
+      <button class="icon-btn sm" data-act="sWeek" data-d="-1" ${s.week <= 1 ? 'disabled' : ''} aria-label="Semana menos">−</button>
+      <b>${s.week}</b>
+      <button class="icon-btn sm" data-act="sWeek" data-d="1" aria-label="Semana más">+</button></div></div>
+  </section>`;
+  if (!exs.length) h += `<p class="empty">Este día no tiene ejercicios. Añádelos en Editar rutina.</p>`;
+  for (const ex of exs) {
+    const e = s.entries[ex.id] || {};
+    const last = lastBefore(ex.id, s);
+    const showNote = noteOpen.has(s.id + ex.id) || !!(e.note && e.note.trim());
+    h += `<article class="ex" data-ex="${ex.id}">
+      <header><div><h3>${esc(ex.name)}</h3>${ex.target ? `<p class="target">Objetivo <b>${esc(ex.target)}</b></p>` : ''}</div>
+        <button class="link" data-act="hist" data-id="${ex.id}">Histórico</button></header>
+      <p class="last">${last ? `Última vez <span>sem ${last.s.week} · ${fmtShort(last.s.date)}</span> <b>${esc(fmtEntry(last.e))}</b>` : 'Sin registros anteriores'}</p>
+      <div class="steps">
+        <div class="step"><button class="icon-btn" data-act="dec" data-f="kg" aria-label="Menos kg">−</button>
+          <label><input id="kg-${ex.id}" data-f="kg" inputmode="decimal" autocomplete="off" value="${e.kg != null ? fmtKg(e.kg) : ''}" placeholder="${last && last.e.kg != null ? fmtKg(last.e.kg) : '—'}"><span>kg</span></label>
+          <button class="icon-btn" data-act="inc" data-f="kg" aria-label="Más kg">+</button></div>
+        <div class="step"><button class="icon-btn" data-act="dec" data-f="reps" aria-label="Menos repeticiones">−</button>
+          <label><input id="reps-${ex.id}" data-f="reps" inputmode="numeric" autocomplete="off" value="${e.reps != null ? e.reps : ''}" placeholder="${last && last.e.reps != null ? last.e.reps : '—'}"><span>reps</span></label>
+          <button class="icon-btn" data-act="inc" data-f="reps" aria-label="Más repeticiones">+</button></div>
+      </div>
+      <footer>${hasValues(last && last.e) ? `<button class="link" data-act="repeat">Repetir lo de la última vez</button>` : '<span></span>'}
+        <button class="link" data-act="note">${showNote ? 'Ocultar nota' : 'Añadir nota'}</button></footer>
+      <textarea id="note-${ex.id}" data-f="note" rows="2" placeholder="Nota (unilateral, asistida…)" ${showNote ? '' : 'hidden'}>${esc(e.note || '')}</textarea>
+    </article>`;
+  }
+  h += `<p class="hint">Se guarda solo. Puedes apuntar solo kg, solo repeticiones o ambos.</p>`;
+  return h;
+}
+
+function renderHistory(exId) {
+  const ex = allExercises().find(e => e.id === exId);
+  const items = history(exId);
+  setHeader(ex ? ex.name : (items[0] ? items[0].e.exerciseName : 'Ejercicio'), ex && ex.target ? `Objetivo ${ex.target}` : 'Histórico');
+  if (!items.length) return `<p class="empty">Todavía no hay nada apuntado en este ejercicio.</p>`;
+  const kgs = items.slice().reverse().filter(i => i.e.kg != null);
+  let h = '';
+  if (kgs.length >= 2) h += `<section class="chart"><h2>Evolución de kg</h2>${chartSvg(kgs)}</section>`;
+  const best = items.filter(i => i.e.kg != null).sort((a, b) => b.e.kg - a.e.kg || (b.e.reps || 0) - (a.e.reps || 0))[0];
+  if (best) h += `<p class="best">Mejor marca <b>${esc(fmtEntry(best.e))}</b> · semana ${best.s.week}</p>`;
+  h += `<ol class="hist">` + items.map(i => {
+    const day = dayById(i.s.dayId);
+    return `<li><button data-act="open" data-id="${i.s.id}"><span class="h-w">S${i.s.week}</span>
+      <span class="h-d">${fmtDay(i.s.date)}${day ? ' · ' + esc(day.name) : ''}${i.e.note ? `<em>${esc(i.e.note)}</em>` : ''}</span>
+      <span class="h-v">${esc(fmtEntry(i.e) || '—')}</span></button></li>`;
+  }).join('') + `</ol>`;
+  return h;
+}
+
+function chartSvg(points) {
+  const W = 320, H = 130, pl = 34, pr = 10, pt = 12, pb = 22;
+  const vals = points.map(p => p.e.kg);
+  let min = Math.min(...vals), max = Math.max(...vals);
+  if (min === max) { min -= 1; max += 1; }
+  const x = i => pl + (points.length === 1 ? 0 : i * (W - pl - pr) / (points.length - 1));
+  const y = v => pt + (1 - (v - min) / (max - min)) * (H - pt - pb);
+  const pts = points.map((p, i) => `${x(i).toFixed(1)},${y(p.e.kg).toFixed(1)}`).join(' ');
+  const area = `${x(0).toFixed(1)},${H - pb} ${pts} ${x(points.length - 1).toFixed(1)},${H - pb}`;
+  const lastI = points.length - 1;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Evolución de kg">
+    <line x1="${pl}" x2="${W - pr}" y1="${y(max)}" y2="${y(max)}" class="grid"/>
+    <line x1="${pl}" x2="${W - pr}" y1="${y(min)}" y2="${y(min)}" class="grid"/>
+    <text x="${pl - 6}" y="${y(max) + 4}" text-anchor="end" class="ax">${fmtKg(max)}</text>
+    <text x="${pl - 6}" y="${y(min) + 4}" text-anchor="end" class="ax">${fmtKg(min)}</text>
+    <polygon points="${area}" class="area"/>
+    <polyline points="${pts}" class="line"/>
+    ${points.map((p, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(p.e.kg).toFixed(1)}" r="${i === lastI ? 5 : 3}" class="${i === lastI ? 'dot end' : 'dot'}"/>`).join('')}
+    <text x="${x(0)}" y="${H - 6}" class="ax">S${points[0].s.week}</text>
+    <text x="${x(lastI)}" y="${H - 6}" text-anchor="end" class="ax">S${points[lastI].s.week}</text>
+  </svg>`;
+}
+
+function renderEditor() {
+  const p = data.program;
+  setHeader('Editar rutina', 'Días, ejercicios y semanas');
+  let h = `<section class="card prog">
+    <label class="field"><span>Inicio de la semana 1</span><input type="date" id="pStart" value="${p.startDate}"></label>
+    <div class="field"><span>Nº de semanas</span><div class="mini-step">
+      <button class="icon-btn sm" data-act="pWeeks" data-d="-1" ${p.weeks <= 1 ? 'disabled' : ''} aria-label="Menos semanas">−</button><b>${p.weeks}</b>
+      <button class="icon-btn sm" data-act="pWeeks" data-d="1" ${p.weeks >= 52 ? 'disabled' : ''} aria-label="Más semanas">+</button></div></div>
+    <p class="hint">La semana de cada sesión sale de su fecha. Si cambias el inicio, se recalculan todas.</p>
+  </section>`;
+  for (const day of p.days) {
+    h += `<article class="card ed-day"><header><span class="${plateClass(day)}">${esc(plateNum(day))}</span><h2>${esc(day.name)}</h2>
+      <button class="link" data-act="renDay" data-id="${day.id}">Renombrar</button><button class="link danger-t" data-act="delDay" data-id="${day.id}">Borrar</button></header><ul>`;
+    day.exercises.forEach((ex, i) => {
+      h += `<li><div class="ed-n"><b>${esc(ex.name)}</b><span>${[ex.target, '± ' + fmtKg(ex.stepKg) + ' kg'].filter(Boolean).map(esc).join(' · ')}</span></div>
+        <div class="ed-b"><button class="icon-btn sm" data-act="mv" data-day="${day.id}" data-i="${i}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
+        <button class="icon-btn sm" data-act="mv" data-day="${day.id}" data-i="${i}" data-d="1" ${i === day.exercises.length - 1 ? 'disabled' : ''} aria-label="Bajar">↓</button>
+        <button class="icon-btn sm" data-act="edEx" data-day="${day.id}" data-id="${ex.id}" aria-label="Editar">✎</button>
+        <button class="icon-btn sm" data-act="delEx" data-day="${day.id}" data-id="${ex.id}" aria-label="Borrar">×</button></div></li>`;
+    });
+    h += `</ul><button class="link" data-act="addEx" data-day="${day.id}">+ Añadir ejercicio</button></article>`;
+  }
+  h += `<div class="stack"><button class="btn ghost wide" data-act="addDay">+ Añadir día</button>
+    <button class="btn ghost wide" data-act="resetRoutine">Restaurar la rutina original del Excel</button></div>`;
+  return h;
+}
+
+// ================== Acciones ==================
+function updEntry(sid, ex, patch) {
+  const s = sessionById(sid); if (!s) return;
+  const e = Object.assign({}, s.entries[ex.id] || {}, patch, { exerciseName: fullName(ex) });
+  if (hasData(e)) s.entries[ex.id] = e; else delete s.entries[ex.id];
+  save();
+}
+
+function startSession(dayId) {
+  const day = dayById(dayId); if (!day) return;
+  const date = selWeek === currentWeek() ? todayStr() : weekStart(data.program.startDate, selWeek);
+  const s = { id: uid(), date, week: selWeek, dayId, dayName: day.name, entries: {} };
+  data.sessions.push(s); save();
+  go({ v: 'session', id: s.id });
+}
+
+function exerciseForm(ex) {
+  return `<label class="field"><span>Nombre</span><input id="fName" value="${esc(ex ? ex.name : '')}"></label>
+    <label class="field"><span>Series/reps objetivo</span><input id="fTarget" placeholder="12x10x10" value="${esc(ex ? ex.target : '')}"></label>
+    <label class="field"><span>Paso de los botones ± (kg)</span><input id="fStep" inputmode="decimal" value="${fmtKg(ex ? ex.stepKg : 2.5)}"></label>`;
+}
+
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-act]');
+  if (!b || b.disabled) return;
+  const a = b.dataset.act, v = curView();
+  const exEl = b.closest('[data-ex]');
+  const exId = exEl && exEl.dataset.ex;
+  const sess = v.v === 'session' ? sessionById(v.id) : null;
+  const exObj = exId && sess ? (dayById(sess.dayId) || { exercises: [] }).exercises.find(e => e.id === exId) : null;
+
+  switch (a) {
+    case 'wk': selWeek = Math.max(1, selWeek + Number(b.dataset.d)); render(); break;
+    case 'wkNow': selWeek = currentWeek(); render(); break;
+    case 'start': startSession(b.dataset.id); break;
+    case 'open': go({ v: 'session', id: b.dataset.id }); break;
+    case 'hist': go({ v: 'history', id: b.dataset.id }); break;
+    case 'keepSeed': delete data.seeded; save(); render(); break;
+    case 'clearSeed':
+      modal({ title: 'Empezar de cero', body: '<p>Se borrarán los registros copiados del Excel y la semana 1 empezará esta semana.</p>', confirm: 'Empezar de cero', danger: true,
+        onConfirm: () => { data.sessions = []; data.program.startDate = mondayOf(todayStr()); delete data.seeded; save(); selWeek = currentWeek(); render(); } });
+      break;
+    case 'sWeek': sess.week = Math.max(1, sess.week + Number(b.dataset.d)); save(); render(); break;
+    case 'inc': case 'dec': {
+      const f = b.dataset.f, sign = a === 'inc' ? 1 : -1;
+      const input = document.getElementById(`${f}-${exId}`);
+      const last = lastBefore(exId, sess);
+      if (f === 'kg') {
+        const base = parseKg(input.value) ?? (last && last.e.kg) ?? 0;
+        const n = Math.max(0, Math.round((base + sign * exObj.stepKg) * 100) / 100);
+        input.value = fmtKg(n); updEntry(sess.id, exObj, { kg: n });
+      } else {
+        const base = parseReps(input.value) ?? (last && last.e.reps) ?? 0;
+        const n = Math.max(0, base + sign);
+        input.value = n; updEntry(sess.id, exObj, { reps: n });
+      }
+      break;
+    }
+    case 'repeat': {
+      const last = lastBefore(exId, sess); if (!last) break;
+      const patch = {};
+      if (last.e.kg != null) { patch.kg = last.e.kg; document.getElementById(`kg-${exId}`).value = fmtKg(last.e.kg); }
+      if (last.e.reps != null) { patch.reps = last.e.reps; document.getElementById(`reps-${exId}`).value = last.e.reps; }
+      updEntry(sess.id, exObj, patch); toast('Copiado de la última vez');
+      break;
+    }
+    case 'note': {
+      const ta = document.getElementById(`note-${exId}`);
+      ta.hidden = !ta.hidden; b.textContent = ta.hidden ? 'Añadir nota' : 'Ocultar nota';
+      if (ta.hidden) noteOpen.delete(sess.id + exId); else { noteOpen.add(sess.id + exId); ta.focus(); }
+      break;
+    }
+    case 'pWeeks': data.program.weeks = Math.min(52, Math.max(1, data.program.weeks + Number(b.dataset.d))); save(); render(); break;
+    case 'mv': {
+      const d = dayById(b.dataset.day), i = Number(b.dataset.i), j = i + Number(b.dataset.d);
+      if (d && j >= 0 && j < d.exercises.length) { const [x] = d.exercises.splice(i, 1); d.exercises.splice(j, 0, x); save(); render(); }
+      break;
+    }
+    case 'addEx': case 'edEx': {
+      const d = dayById(b.dataset.day);
+      const ex = a === 'edEx' ? d.exercises.find(e => e.id === b.dataset.id) : null;
+      modal({ title: ex ? 'Editar ejercicio' : 'Nuevo ejercicio', body: exerciseForm(ex), confirm: 'Guardar', onConfirm: (m) => {
+        const name = m.querySelector('#fName').value.trim();
+        if (!name) { m.querySelector('#fName').focus(); return false; }
+        const obj = { id: ex ? ex.id : uid(), name, target: m.querySelector('#fTarget').value.trim(), stepKg: parseKg(m.querySelector('#fStep').value) || 2.5 };
+        if (ex) Object.assign(ex, obj); else d.exercises.push(obj);
+        save(); render();
+      } });
+      break;
+    }
+    case 'delEx': {
+      const d = dayById(b.dataset.day), ex = d.exercises.find(e => e.id === b.dataset.id);
+      modal({ title: 'Borrar ejercicio', body: `<p>Se quitará «${esc(ex.name)}» de la rutina. Lo ya apuntado se conserva en la hoja «Datos» del Excel.</p>`, confirm: 'Borrar', danger: true,
+        onConfirm: () => { d.exercises = d.exercises.filter(e => e.id !== ex.id); save(); render(); } });
+      break;
+    }
+    case 'renDay': {
+      const d = dayById(b.dataset.id);
+      modal({ title: 'Nombre del día', body: `<label class="field"><span>Nombre</span><input id="fDay" value="${esc(d.name)}"></label>`, confirm: 'Guardar',
+        onConfirm: (m) => { const n = m.querySelector('#fDay').value.trim(); if (!n) return false; d.name = n; save(); render(); } });
+      break;
+    }
+    case 'delDay': {
+      const d = dayById(b.dataset.id);
+      modal({ title: `Borrar ${d.name}`, body: '<p>Se quitará el día y sus ejercicios de la rutina. Las sesiones hechas se conservan en la hoja «Datos».</p>', confirm: 'Borrar', danger: true,
+        onConfirm: () => { data.program.days = data.program.days.filter(x => x !== d); save(); render(); } });
+      break;
+    }
+    case 'addDay': data.program.days.push({ id: uid(), name: `Día ${data.program.days.length + 1}`, exercises: [] }); save(); render(); break;
+    case 'resetRoutine':
+      modal({ title: 'Restaurar rutina', body: '<p>La rutina vuelve a ser la del Excel original (4 días). Lo apuntado no se borra.</p>', confirm: 'Restaurar',
+        onConfirm: () => { data.program.days = defaultDays(); save(); render(); } });
+      break;
+  }
+});
+
+document.addEventListener('input', (ev) => {
+  const el = ev.target;
+  if (!el.dataset.f) return;
+  const v = curView(); if (v.v !== 'session') return;
+  const sess = sessionById(v.id);
+  const exId = el.closest('[data-ex]').dataset.ex;
+  const ex = dayById(sess.dayId).exercises.find(e => e.id === exId);
+  if (el.dataset.f === 'kg') { el.value = el.value.replace(/[^\d.,]/g, ''); updEntry(sess.id, ex, { kg: parseKg(el.value) }); }
+  else if (el.dataset.f === 'reps') { el.value = el.value.replace(/\D/g, ''); updEntry(sess.id, ex, { reps: parseReps(el.value) }); }
+  else if (el.dataset.f === 'note') updEntry(sess.id, ex, { note: el.value });
+});
+
+document.addEventListener('change', (ev) => {
+  const el = ev.target;
+  if (el.id === 'sDate' && el.value) {
+    const s = sessionById(curView().id);
+    s.date = el.value; s.week = weekFor(data.program.startDate, el.value); save(); render();
+  } else if (el.id === 'pStart' && el.value) {
+    data.program.startDate = el.value;
+    data.sessions.forEach(s => { s.week = weekFor(el.value, s.date); });
+    save(); selWeek = currentWeek(); render();
+  } else if (el.id === 'importFile' && el.files[0]) {
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (!d.program || !Array.isArray(d.program.days) || !Array.isArray(d.sessions)) throw new Error();
+        modal({ title: 'Restaurar copia', body: `<p>Se sustituirán los datos actuales por los de la copia (${d.sessions.length} sesiones).</p>`, confirm: 'Restaurar', danger: true,
+          onConfirm: () => { data = d; save(); nav.length = 1; selWeek = currentWeek(); render(true); toast('Copia restaurada'); } });
+      } catch (e) { toast('Ese archivo no es una copia de RFM GYM'); }
+      el.value = '';
+    };
+    r.readAsText(el.files[0]);
+  }
+});
+
+$('#back').addEventListener('click', back);
+$('#menuBtn').addEventListener('click', () => { const m = $('#menu'); m.hidden = !m.hidden; });
+$('#delSession').addEventListener('click', () => {
+  const s = sessionById(curView().id);
+  modal({ title: 'Borrar sesión', body: `<p>Se borrará lo apuntado el ${fmtDay(s.date)}.</p>`, confirm: 'Borrar', danger: true,
+    onConfirm: () => { data.sessions = data.sessions.filter(x => x.id !== s.id); save(); back(); } });
+});
+$('#menu').addEventListener('click', (ev) => {
+  const b = ev.target.closest('[data-menu]'); if (!b) return;
+  $('#menu').hidden = true;
+  const today = todayStr();
+  if (b.dataset.menu === 'editor') go({ v: 'editor' });
+  else if (b.dataset.menu === 'xlsx') { download(`RFM_GYM_${today}.xlsx`, buildXlsx(data, fmtEntry, fullName), XLSX_MIME); toast('Excel generado'); }
+  else if (b.dataset.menu === 'backup') { download(`RFM_GYM_copia_${today}.json`, JSON.stringify(data, null, 1), 'application/json'); toast('Copia generada'); }
+  else if (b.dataset.menu === 'import') $('#importFile').click();
+});
+document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { $('#modal').hidden = true; $('#menu').hidden = true; } });
+
+render();
+
+document.addEventListener('click', (ev) => {
+  if (!ev.target.closest('#menu') && !ev.target.closest('#menuBtn')) document.getElementById('menu').hidden = true;
+}, true);
+</script>
+
+<script>if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});</script>
+</body>
+</html>
